@@ -1,7 +1,5 @@
 package com.example.cafe.domain.trade.domain.entity;
 
-
-
 import com.example.cafe.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
