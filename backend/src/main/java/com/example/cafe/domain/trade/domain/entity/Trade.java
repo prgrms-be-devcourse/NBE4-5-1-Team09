@@ -1,4 +1,4 @@
-package com.example.cafe.trade.domain.entity;
+package com.example.cafe.domain.trade.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -13,16 +13,23 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Getter
+@Data
 @Table(name = "trade")
 @EntityListeners(AuditingEntityListener.class)
 public class Trade {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "trade_id")
+    @Setter(AccessLevel.PRIVATE)
     private Long id;
 
-    @Setter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id")
+    private Member member;
+
+    private String email;
+
+
     @Enumerated(EnumType.STRING)
     private TradeStatus tradeStatus;
 
@@ -30,13 +37,11 @@ public class Trade {
     @OneToMany(mappedBy = "trade", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TradeItem> tradeItems;
 
-
-    @Setter
     private Integer totalPrice;
 
+    private String address;
 
     @Column(name = "tradeUUID")
-    @Setter
     private String tradeUUID;
 
     @CreatedDate

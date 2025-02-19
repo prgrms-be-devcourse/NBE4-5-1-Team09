@@ -1,5 +1,6 @@
-package com.example.cafe.trade.domain.entity;
+package com.example.cafe.domain.trade.domain.entity;
 
+import com.example.cafe.domain.item.entity.Item;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,9 +24,9 @@ public class TradeItem {
     @JoinColumn(name = "item_id")
     private Item item;
 
-    private Integer price;
+    private Integer quantity;
 
-    private Integer quantity; // 해당 아이템의 수량
+    private Integer price;
 
     public void setPrice() {
         this.price = this.item.getPrice();
