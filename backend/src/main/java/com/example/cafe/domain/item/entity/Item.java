@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.List;
 
@@ -12,6 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
+@Setter
 public class Item {
 
     @Id
@@ -36,14 +38,15 @@ public class Item {
     private String content;
 
     @Column(name = "category")
-    private String category;
+    private ItemCategory category;
 
     @Column(name = "avg_rating")
     private Double avgRating;
 
     @Column(name = "item_status", nullable = false)
-    private String itemStatus;
+    private ItemStatus itemStatus;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CartItem> cartItems;
+
 }
