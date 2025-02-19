@@ -1,8 +1,9 @@
 package com.example.cafe.domain.review.service;
 
 import com.example.cafe.domain.item.entity.Item;
+import com.example.cafe.domain.item.respository.ItemRepository;
 import com.example.cafe.domain.member.entity.Member;
-import com.example.cafe.domain.review.dto.ReviewResponseDto;
+import com.example.cafe.domain.member.repository.MemberRepository;
 import com.example.cafe.domain.review.entity.Review;
 import com.example.cafe.domain.review.entity.ReviewSortType;
 import com.example.cafe.domain.review.repository.ReviewRepository;
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class ReviewService {
