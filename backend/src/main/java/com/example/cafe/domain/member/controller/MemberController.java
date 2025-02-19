@@ -56,4 +56,12 @@ public class MemberController {
         response.put("email", email);
         return ResponseEntity.ok(response);
     }
+
+    // 이메일 인증: 사용자가 이메일로 받은 인증 코드를 제출하여 이메일 인증을 완료
+    @PostMapping("/verify-email")
+    public ResponseEntity<?> verifyEmail(@RequestParam String email,
+                                         @RequestParam String code) {
+        boolean result = memberService.verifyEmail(email, code);
+        return ResponseEntity.ok(result ? "이메일 인증 성공" : "이메일 인증 실패");
+    }
 }

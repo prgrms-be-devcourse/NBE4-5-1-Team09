@@ -17,6 +17,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthTokenService authTokenService;
+    private final EmailVerificationService emailVerificationService;
 
     @Value("${custom.admin.admin-code}")
     private String secretAdminCode;
@@ -42,8 +43,15 @@ public class MemberService {
                 .password(encodedPassword)
                 .address(address)
                 .authority("USER")
+                .verified(false)
                 .build();
-        return memberRepository.save(member);
+        member = memberRepository.save(member);
+        try {
+            emailVerificationService.sendVerificationEmail(member);
+        } catch (Exception e) {
+            throw new RuntimeException("이메일 발송 실패: " + e.getMessage());
+        }
+        return member;
     }
 
     // 관리자 회원 가입
@@ -61,6 +69,7 @@ public class MemberService {
                 .password(encodedPassword)
                 .address(address)
                 .authority("ADMIN")
+                .verified(true)
                 .build();
         return memberRepository.save(member);
     }
@@ -71,6 +80,9 @@ public class MemberService {
                 .orElseThrow(() -> new IllegalArgumentException("회원 정보가 없습니다."));
         if (!passwordEncoder.matches(rawPassword, member.getPassword())) {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        }
+        if (!member.isVerified()) {
+            throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다.");
         }
         return authTokenService.genAccessToken(member);
     }
@@ -86,5 +98,9 @@ public class MemberService {
             throw new IllegalArgumentException("관리자 권한이 없습니다.");
         }
         return authTokenService.genAccessToken(member);
+    }
+
+    public boolean verifyEmail(String email, String code) {
+        return emailVerificationService.verifyEmail(email, code);
     }
 }
