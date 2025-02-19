@@ -1,9 +1,15 @@
 package com.example.cafe.domain.item.service;
 
+import com.example.cafe.domain.item.dto.ItemRequestDto;
+import com.example.cafe.domain.item.dto.ItemResponseDto;
 import com.example.cafe.domain.item.entity.Item;
+import com.example.cafe.domain.item.entity.ItemCategory;
+import com.example.cafe.domain.item.entity.ItemStatus;
 import com.example.cafe.domain.item.respository.ItemRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -13,11 +19,33 @@ public class ItemService {
 
     private final ItemRepository itemRepository;
 
-    public List<Item> getAllItems() {
-        return itemRepository.findAll();
+    public List<ItemResponseDto> getAllItems() {
+        return itemRepository.findAll().stream().map(ItemResponseDto::new).toList();
     }
 
-    public Item getItem(Long id) {
-        return itemRepository.findById(id).get();
+    public ItemResponseDto getItem(Long id) {
+
+        Item item = itemRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("상품이 존재하지 않습니다. id: " + id));
+
+        return new ItemResponseDto(item);
+    }
+
+    @Transactional
+    public ItemResponseDto createItem(ItemRequestDto itemRequestDto) {
+
+        Item item = new Item();
+        item.setItemName(itemRequestDto.getItemName());
+        item.setPrice(itemRequestDto.getPrice());
+        item.setStock(itemRequestDto.getStock());
+        item.setImagePath(itemRequestDto.getImagePath());
+        item.setContent(itemRequestDto.getContent());
+        item.setCategory(ItemCategory.valueOf(itemRequestDto.getCategory()));
+        item.setAvgRating(0.0);
+        item.setItemStatus(ItemStatus.ON_SALE);
+
+        Item savedItem = itemRepository.save(item);
+
+        return new ItemResponseDto(savedItem);
     }
 }
