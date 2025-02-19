@@ -1,5 +1,6 @@
 package com.example.cafe.domain.trade.service.user;
 
+
 import com.example.cafe.domain.trade.repository.CartItemRepository;
 import com.example.cafe.domain.trade.repository.CartRepository;
 import com.example.cafe.domain.trade.repository.TradeItemRepository;
@@ -15,8 +16,5 @@ public class UserTradeService {
     private final TradeItemRepository tradeItemRepository;
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
-
-
-
 
 }
