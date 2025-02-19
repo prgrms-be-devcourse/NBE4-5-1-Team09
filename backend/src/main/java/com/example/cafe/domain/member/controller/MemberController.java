@@ -5,10 +5,7 @@ import com.example.cafe.domain.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/member")
@@ -24,5 +21,13 @@ public class MemberController {
                                     @RequestParam String address) {
         Member member = memberService.join(email, password, address);
         return ResponseEntity.ok("회원 가입 성공: " + member.getEmail());
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestParam String email,
+                                   @RequestParam String password) {
+        Member member = memberService.login(email, password);
+        // 실제 토큰 발급 미구현
+        return ResponseEntity.ok("로그인 성공: " + member.getEmail());
     }
 }
