@@ -4,8 +4,6 @@ import com.example.cafe.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.util.List;
-
 @Entity
 @Data
 public class Cart {
@@ -18,7 +16,4 @@ public class Cart {
     @JoinColumn(name = "member_id")
     private Member member;
 
-    // 장바구니는 여러 CartItem을 가짐 (1:N)
-    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CartItem> cartItems;
 }
