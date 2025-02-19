@@ -23,6 +23,15 @@ public class MemberController {
         return ResponseEntity.ok("회원 가입 성공: " + member.getEmail());
     }
 
+    @PostMapping("/join/admin")
+    public ResponseEntity<?> signUpAdmin(@RequestParam String email,
+                                         @RequestParam String password,
+                                         @RequestParam String address,
+                                         @RequestParam String adminCode) {
+        Member member = memberService.joinAdmin(email, password, address, adminCode);
+        return ResponseEntity.ok("관리자 회원 가입 성공: " + member.getEmail());
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestParam String email,
                                    @RequestParam String password) {
@@ -30,4 +39,12 @@ public class MemberController {
         // 실제 토큰 발급 미구현
         return ResponseEntity.ok("로그인 성공: " + member.getEmail());
     }
+
+    @PostMapping("/login/admin")
+    public ResponseEntity<?> loginAdmin(@RequestParam String email,
+                                        @RequestParam String password) {
+        Member member = memberService.loginAdmin(email, password);
+        return ResponseEntity.ok("관리자 로그인 성공: " + member.getEmail());
+    }
 }
+
