@@ -9,11 +9,8 @@ import java.util.Optional;
 
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
-    List<Review> findByProductIdOrderByCreatedAtDesc(Long productId);
-    Optional<Review> findByMemberIdAndProductId(Long memberId, Long productId);
-    Double findAverageRatingByProductId(Long productId);
-
-    List<Review> findByItem_IdOrderByCreatedAtDesc(Long itemId);
-
+    List<Review> findByItem_IdOrderByCreated_atDesc(Long itemId); // 최신순
+    List<Review> findByItem_IdOrderByRatingDesc(Long itemId);    // 평점 높은 순
+    List<Review> findByItem_IdOrderByRatingAsc(Long itemId);     // 평점 낮은 순
     Double findAverageRatingByItem_Id(Long itemId);
 }
