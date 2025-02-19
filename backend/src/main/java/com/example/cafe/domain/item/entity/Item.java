@@ -46,7 +46,7 @@ public class Item {
     @Column(name = "item_status", nullable = false)
     private ItemStatus itemStatus;
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CartItem> cartItems;
 
 }
