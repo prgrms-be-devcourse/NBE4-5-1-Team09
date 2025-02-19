@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 public class Review {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "review_id")
     private Long review_id;
 
     @ManyToOne
@@ -27,7 +28,11 @@ public class Review {
     @ManyToOne
     @JoinColumn(name = "item_id")
     private Item item;
+
+    @Column(name = "review_content")
     private String review_content;
+
+    @Column(name = "rating")
     private double rating;
 
     @Column(name = "created_at")
