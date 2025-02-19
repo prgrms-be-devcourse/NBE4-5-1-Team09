@@ -36,5 +36,8 @@ out/
 ### VS Code ###
 .vscode/
 
+# macOS 시스템 파일 제외
+.DS_Store
 
 ### custom ###
+
