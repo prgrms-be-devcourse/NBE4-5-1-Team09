@@ -36,5 +36,11 @@ out/
 ### VS Code ###
 .vscode/
 
+<<<<<<< HEAD
 # macOS 시스템 파일 제외
 .DS_Store
+=======
+
+### custom ###
+application.yml
+>>>>>>> 32b03f8bac04c71449df1b90848b88ff5667b135

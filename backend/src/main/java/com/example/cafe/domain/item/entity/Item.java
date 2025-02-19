@@ -1,10 +1,13 @@
 package com.example.cafe.domain.item.entity;
 
+import com.example.cafe.domain.trade.domain.entity.CartItem;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.List;
 
 @Entity
 @NoArgsConstructor
@@ -42,4 +45,8 @@ public class Item {
 
     @Column(name = "item_status", nullable = false)
     private ItemStatus itemStatus;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CartItem> cartItems;
+
 }
