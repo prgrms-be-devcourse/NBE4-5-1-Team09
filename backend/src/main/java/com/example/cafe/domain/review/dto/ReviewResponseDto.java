@@ -27,8 +27,8 @@ public class ReviewResponseDto {
         dto.setItemId(review.getItem().getId());
         dto.setReviewContent(review.getReview_content());
         dto.setRating(review.getRating());
-        dto.setCreatedAt(review.getCreated_at());
-        dto.setModifiedAt(review.getModified_at());
+        dto.setCreatedAt(review.getCreatedAt());
+        dto.setModifiedAt(review.getModifiedAt());
         return dto;
     }
 }

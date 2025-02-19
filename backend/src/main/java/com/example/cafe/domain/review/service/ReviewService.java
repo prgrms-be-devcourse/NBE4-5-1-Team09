@@ -37,8 +37,8 @@ public class ReviewService {
         review.setItem(item);
         review.setReview_content(reviewContent);
         review.setRating(rating);
-        review.setCreated_at(LocalDateTime.now());
-        review.setModified_at(LocalDateTime.now());
+        review.setCreatedAt(LocalDateTime.now());
+        review.setModifiedAt(LocalDateTime.now());
 
         return reviewRepository.save(review);
     }
@@ -50,7 +50,7 @@ public class ReviewService {
 
         review.setReview_content(reviewContent);
         review.setRating(rating);
-        review.setModified_at(LocalDateTime.now());
+        review.setModifiedAt(LocalDateTime.now());
 
         return reviewRepository.save(review);
     }
@@ -72,7 +72,7 @@ public class ReviewService {
                 return reviewRepository.findByItem_IdOrderByRatingAsc(itemId);
             case LATEST:
             default:
-                return reviewRepository.findByItem_IdOrderByCreated_atDesc(itemId);
+                return reviewRepository.findByItem_IdOrderByCreatedAtDesc(itemId);
         }
     }
 

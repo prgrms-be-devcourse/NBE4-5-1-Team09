@@ -25,23 +25,27 @@ public class Review {
     private Member member;
 
     @ManyToOne
-    @JoinColumn(name = "product_id")
+    @JoinColumn(name = "item_id")
     private Item item;
     private String review_content;
     private double rating;
-    private LocalDateTime created_at;
-    private LocalDateTime modified_at;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "modified_at")
+    private LocalDateTime modifiedAt;
     
     // 엔티티가 처음 저장될 때 실행
     @PrePersist
     public void prePersist() {
-        this.created_at = LocalDateTime.now();
-        this.modified_at = LocalDateTime.now(); // 생성 시점과 동일하게 초기화
+        this.createdAt = LocalDateTime.now();
+        this.modifiedAt = LocalDateTime.now(); // 생성 시점과 동일하게 초기화
     }
 
     // 엔티티가 업데이트될 때 실행
     @PreUpdate
     public void preUpdate() {
-        this.modified_at = LocalDateTime.now();
+        this.modifiedAt = LocalDateTime.now();
     }
 }
