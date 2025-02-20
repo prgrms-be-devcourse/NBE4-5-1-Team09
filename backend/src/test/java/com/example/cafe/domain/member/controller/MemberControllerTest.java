@@ -1,6 +1,7 @@
 package com.example.cafe.domain.member.controller;
 
 import com.example.cafe.domain.member.dto.AdminJoinRequestDto;
+import com.example.cafe.domain.member.dto.EmailVerificationRequestDto;
 import com.example.cafe.domain.member.dto.LoginRequestDto;
 import com.example.cafe.domain.member.dto.MemberJoinRequestDto;
 import com.example.cafe.domain.member.entity.Member;
@@ -159,4 +160,37 @@ public class MemberControllerTest {
                 .andExpect(jsonPath("$.token").value("adminToken"))
                 .andExpect(jsonPath("$.email").value("admin@test.com"));
     }
+
+    @Test
+    @DisplayName("이메일 인증 성공 시 정상 응답 확인")
+    public void t7() throws Exception {
+        EmailVerificationRequestDto request = new EmailVerificationRequestDto();
+        request.setEmail("test@example.com");
+        request.setCode("12345678");
+
+        Mockito.when(memberService.verifyEmail(anyString(), anyString())).thenReturn(true);
+
+        mvc.perform(post("/api/member/verify-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("이메일 인증 성공"));
+    }
+
+    @Test
+    @DisplayName("이메일 인증 실패 시 정상 응답 확인")
+    public void t8() throws Exception {
+        EmailVerificationRequestDto request = new EmailVerificationRequestDto();
+        request.setEmail("test@example.com");
+        request.setCode("wrongCode");
+
+        Mockito.when(memberService.verifyEmail(anyString(), anyString())).thenReturn(false);
+
+        mvc.perform(post("/api/member/verify-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("이메일 인증 실패"));
+    }
+
 }
