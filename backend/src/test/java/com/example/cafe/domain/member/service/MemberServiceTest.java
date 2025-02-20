@@ -61,4 +61,20 @@ public class MemberServiceTest {
         assertEquals(email, result.getEmail());
         verify(emailVerificationService, times(1)).sendVerificationEmail(any(Member.class));
     }
+
+    @Test
+    @DisplayName("일반 회원 가입 중복 이메일 실패 테스트")
+    public void t2() {
+        String email = "test@test.com";
+        String password = "testtest";
+        String address = "test";
+        Member existing = Member.builder().email(email).build();
+        when(memberRepository.findByEmail(email)).thenReturn(Optional.of(existing));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
+            memberService.join(email, password, address);
+        });
+        assertEquals(ErrorMessages.ALREADY_REGISTERED_EMAIL, ex.getMessage());
+    }
+
 }
