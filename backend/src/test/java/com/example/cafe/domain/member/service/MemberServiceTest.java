@@ -245,4 +245,32 @@ public class MemberServiceTest {
         verify(passwordEncoder, times(1)).encode(password);
         assertEquals(encodedPassword, result.getPassword());
     }
+
+    @Test
+    @DisplayName("관리자 회원 가입 - Repository 저장 호출 테스트")
+    public void t11() {
+        ReflectionTestUtils.setField(memberService, "secretAdminCode", "adminValue");
+
+        String email = "admin@test.com";
+        String password = "testtest";
+        String address = "test";
+        String providedAdminCode = "adminValue";
+
+        when(memberRepository.findByEmail(email)).thenReturn(Optional.empty());
+        String encodedPassword = "encodedAdminTest";
+        when(passwordEncoder.encode(password)).thenReturn(encodedPassword);
+
+        Member adminMember = Member.builder()
+                .email(email)
+                .password(encodedPassword)
+                .address(address)
+                .authority("ADMIN")
+                .verified(true)
+                .build();
+        when(memberRepository.save(any(Member.class))).thenReturn(adminMember);
+
+        memberService.joinAdmin(email, password, address, providedAdminCode);
+        // Repository의 save 메서드가 한 번 호출되었는지 검증
+        verify(memberRepository, times(1)).save(any(Member.class));
+    }
 }
