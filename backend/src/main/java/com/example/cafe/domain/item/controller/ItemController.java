@@ -1,13 +1,13 @@
 package com.example.cafe.domain.item.controller;
 
-import com.example.cafe.domain.item.entity.Item;
+import com.example.cafe.domain.item.dto.ItemRequestDto;
+import com.example.cafe.domain.item.dto.ItemResponseDto;
 import com.example.cafe.domain.item.service.ItemService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -19,13 +19,20 @@ public class ItemController {
     private final ItemService itemService;
 
     @GetMapping
-    public ResponseEntity<List<Item>> getAllItems() {
+    public ResponseEntity<List<ItemResponseDto>> getAllItems() {
         return ResponseEntity.ok(itemService.getAllItems());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Item> getItem(@PathVariable Long id) {
+    public ResponseEntity<ItemResponseDto> getItem(@PathVariable Long id) {
         return ResponseEntity.ok(itemService.getItem(id));
+    }
+
+    @PostMapping
+    public ResponseEntity<ItemResponseDto> createItem(@RequestBody @Valid ItemRequestDto itemRequestDto) {
+
+        ItemResponseDto item = itemService.createItem(itemRequestDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(item);
     }
 
 }
