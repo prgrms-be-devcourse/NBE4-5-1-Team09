@@ -9,7 +9,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -17,7 +16,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -93,9 +91,12 @@ public class MemberServiceTest {
                 .build();
         when(memberRepository.findByEmail(email)).thenReturn(Optional.of(member));
         when(passwordEncoder.matches(password, member.getPassword())).thenReturn(true);
-        when(authTokenService.genAccessToken(member)).thenReturn(token);
+        // 수정: any(Member.class) 사용하여 인자 매칭
+        when(authTokenService.genAccessToken(any(Member.class))).thenReturn(token);
 
-        String resultToken = memberService.login(email, password);
+        Member resultMember = memberService.login(email, password);
+        String resultToken = authTokenService.genAccessToken(resultMember);
+
         assertEquals(token, resultToken);
     }
 

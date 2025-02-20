@@ -42,4 +42,5 @@ logging:
 custom:
   jwt:
     expire-seconds: 3600
+    refresh-expire-seconds: 604800
 

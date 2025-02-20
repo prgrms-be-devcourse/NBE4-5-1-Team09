@@ -25,7 +25,7 @@ public class MemberService {
     @Value("${custom.admin.admin-code}")
     private String secretAdminCode;
 
-    // 일반 회원 가입
+    // 일반 회원 가입 (이메일 인증 코드 발송 로직 포함)
     @Transactional
     public Member join(String email, String password, String address) {
         log.info("일반 회원 가입 시도 :{}", email);
@@ -84,8 +84,8 @@ public class MemberService {
         return memberRepository.save(member);
     }
 
-    // 일반 회원 로그인
-    public String login(String email, String rawPassword) {
+    // 일반 회원 로그인 (이메일 인증 여부 포함)
+    public Member login(String email, String rawPassword) {
         log.info("일반 회원 로그인 시도: {}", email);
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.MEMBER_NOT_FOUND));
@@ -95,11 +95,11 @@ public class MemberService {
         if (!member.isVerified()) {
             throw new IllegalArgumentException(ErrorMessages.EMAIL_NOT_VERIFIED);
         }
-        return authTokenService.genAccessToken(member);
+        return member;
     }
 
-    // 관리자 로그인: 일반 로그인 후, 추가로 권한 확인
-    public String loginAdmin(String email, String rawPassword) {
+    // 관리자 로그인: 추가로 권한 확인
+    public Member loginAdmin(String email, String rawPassword) {
         log.info("관리자 로그인 시도: {}", email);
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.MEMBER_NOT_FOUND));
@@ -109,7 +109,13 @@ public class MemberService {
         if (!"ADMIN".equalsIgnoreCase(member.getAuthority())) {
             throw new IllegalArgumentException(ErrorMessages.INVALID_ADMIN_CODE);
         }
-        return authTokenService.genAccessToken(member);
+        return member;
+    }
+
+    // 리프레시 토큰 재발급 시 회원 조회에 사용
+    public Member findByEmail(String email) {
+        return memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.MEMBER_NOT_FOUND));
     }
 
     public boolean verifyEmail(String email, String code) {

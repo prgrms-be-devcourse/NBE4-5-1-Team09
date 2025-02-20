@@ -5,24 +5,26 @@ import com.example.cafe.domain.member.dto.EmailVerificationRequestDto;
 import com.example.cafe.domain.member.dto.LoginRequestDto;
 import com.example.cafe.domain.member.dto.MemberJoinRequestDto;
 import com.example.cafe.domain.member.entity.Member;
+import com.example.cafe.domain.member.service.AuthTokenService;
 import com.example.cafe.domain.member.service.MemberService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
-
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -37,7 +39,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 JpaRepositoriesAutoConfiguration.class
         }
 )
-// 명시적으로 컨트롤러와 테스트 전용 설정만 로드하도록 함
 @ContextConfiguration(classes = {MemberController.class, MemberControllerTest.TestConfig.class})
 @AutoConfigureMockMvc(addFilters = false)
 public class MemberControllerTest {
@@ -49,8 +50,11 @@ public class MemberControllerTest {
     @Autowired
     private MockMvc mvc;
 
-    @MockitoBean
+    @MockBean
     private MemberService memberService;
+
+    @MockBean
+    private AuthTokenService authTokenService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -63,12 +67,8 @@ public class MemberControllerTest {
         request.setPassword("testtest");
         request.setAddress("test test test");
 
-        Member member = Member.builder()
-                .email("test@test.com")
-                .build();
-
-        when(memberService.join(anyString(), anyString(), anyString()))
-                .thenReturn(member);
+        Member member = Member.builder().email("test@test.com").build();
+        when(memberService.join(anyString(), anyString(), anyString())).thenReturn(member);
 
         mvc.perform(post("/api/member/join")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -98,7 +98,13 @@ public class MemberControllerTest {
         request.setEmail("test@test.com");
         request.setPassword("testtest");
 
-        Mockito.when(memberService.login(anyString(), anyString())).thenReturn("dummytoken");
+        // MemberService.login은 Member 객체를 반환하도록 목킹
+        Member member = Member.builder().email("test@test.com").build();
+        when(memberService.login(anyString(), anyString())).thenReturn(member);
+
+        // AuthTokenService에서 토큰 생성 목킹
+        when(authTokenService.genAccessToken(member)).thenReturn("dummytoken");
+        when(authTokenService.genRefreshToken(member)).thenReturn("dummyrefresh");
 
         mvc.perform(post("/api/member/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -118,8 +124,7 @@ public class MemberControllerTest {
         request.setAdminCode("secret");
 
         Member adminMember = Member.builder().email("admin@test.com").build();
-        Mockito.when(memberService.joinAdmin(anyString(), anyString(), anyString(), anyString()))
-                .thenReturn(adminMember);
+        when(memberService.joinAdmin(anyString(), anyString(), anyString(), anyString())).thenReturn(adminMember);
 
         mvc.perform(post("/api/member/join/admin")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -131,7 +136,6 @@ public class MemberControllerTest {
     @Test
     @DisplayName("관리자 회원 가입 필수 필드 검증 실패")
     public void t5() throws Exception {
-        // 필수 필드 누락 (빈 문자열)
         AdminJoinRequestDto request = new AdminJoinRequestDto();
         request.setEmail("");
         request.setPassword("");
@@ -151,7 +155,11 @@ public class MemberControllerTest {
         request.setEmail("admin@test.com");
         request.setPassword("admintest");
 
-        Mockito.when(memberService.loginAdmin(anyString(), anyString())).thenReturn("adminToken");
+        // 관리자 로그인은 MemberService.loginAdmin이 Member 객체를 반환하도록 목킹
+        Member adminMember = Member.builder().email("admin@test.com").build();
+        when(memberService.loginAdmin(anyString(), anyString())).thenReturn(adminMember);
+        when(authTokenService.genAccessToken(adminMember)).thenReturn("adminToken");
+        when(authTokenService.genRefreshToken(adminMember)).thenReturn("adminRefresh");
 
         mvc.perform(post("/api/member/login/admin")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -168,7 +176,7 @@ public class MemberControllerTest {
         request.setEmail("test@example.com");
         request.setCode("12345678");
 
-        Mockito.when(memberService.verifyEmail(anyString(), anyString())).thenReturn(true);
+        when(memberService.verifyEmail(anyString(), anyString())).thenReturn(true);
 
         mvc.perform(post("/api/member/verify-email")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -184,13 +192,33 @@ public class MemberControllerTest {
         request.setEmail("test@example.com");
         request.setCode("wrongCode");
 
-        Mockito.when(memberService.verifyEmail(anyString(), anyString())).thenReturn(false);
+        when(memberService.verifyEmail(anyString(), anyString())).thenReturn(false);
 
         mvc.perform(post("/api/member/verify-email")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(content().string("이메일 인증 실패"));
+    }
+
+    @Test
+    @DisplayName("액세스 토큰 재발급 정상 동작 확인")
+    public void t9() throws Exception {
+        String refreshToken = "validRefreshToken";
+        // verifyToken()이 유효한 토큰으로 인식되어 클레임 맵을 반환하도록 설정
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("email", "test@test.com");
+        when(authTokenService.verifyToken(refreshToken)).thenReturn(claims);
+
+        // 클레임의 이메일로 회원 조회 후, 새로운 액세스 토큰 생성
+        Member member = Member.builder().email("test@test.com").build();
+        when(memberService.findByEmail("test@test.com")).thenReturn(member);
+        when(authTokenService.genAccessToken(member)).thenReturn("newDummyToken");
+
+        mvc.perform(post("/api/member/refresh")
+                        .cookie(new Cookie("refreshToken", refreshToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("newDummyToken"));
     }
 
 }
