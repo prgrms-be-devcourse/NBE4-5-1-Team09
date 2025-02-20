@@ -199,4 +199,21 @@ public class MemberServiceTest {
         });
         assertEquals(ErrorMessages.ALREADY_REGISTERED_EMAIL, ex.getMessage());
     }
+
+    @Test
+    @DisplayName("관리자 회원 가입 - 잘못된 admin code 실패 테스트")
+    public void t9() {
+        ReflectionTestUtils.setField(memberService, "secretAdminCode", "adminValue");
+
+        String email = "admin@test.com";
+        String password = "testtest";
+        String address = "test";
+        // 잘못된 admin code 제공
+        String providedAdminCode = "wrongCode";
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
+            memberService.joinAdmin(email, password, address, providedAdminCode);
+        });
+        assertEquals(ErrorMessages.INVALID_ADMIN_CODE, ex.getMessage());
+    }
 }
