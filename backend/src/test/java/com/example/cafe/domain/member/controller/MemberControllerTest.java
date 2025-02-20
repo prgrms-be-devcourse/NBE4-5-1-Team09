@@ -1,11 +1,13 @@
 package com.example.cafe.domain.member.controller;
 
+import com.example.cafe.domain.member.dto.LoginRequestDto;
 import com.example.cafe.domain.member.dto.MemberJoinRequestDto;
 import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.domain.member.service.MemberService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
@@ -85,5 +87,22 @@ public class MemberControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("일반 유저 로그인 정상 동작 확인")
+    public void t3() throws Exception {
+        LoginRequestDto request = new LoginRequestDto();
+        request.setEmail("test@test.com");
+        request.setPassword("testtest");
+
+        Mockito.when(memberService.login(anyString(), anyString())).thenReturn("dummytoken");
+
+        mvc.perform(post("/api/member/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("dummytoken"))
+                .andExpect(jsonPath("$.email").value("test@test.com"));
     }
 }
