@@ -1,8 +1,10 @@
 package com.example.cafe.domain.member.service;
 
+import com.example.cafe.global.constant.ErrorMessages;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MailService {
 
     private final JavaMailSender javaMailSender;
@@ -35,9 +38,10 @@ public class MailService {
         MimeMessage message = createMail(recipientEmail, code);
         try {
             javaMailSender.send(message);
+            log.info("메일 전송 성공:{}", recipientEmail);
         } catch (MailException e) {
-            e.printStackTrace();
-            throw new IllegalArgumentException("메일 발송 중 오류가 발생했습니다.");
+            log.error("메일 전송 에러: {}", recipientEmail, e);
+            throw new IllegalArgumentException(ErrorMessages.MAIL_SENDING_FAILED);
         }
     }
 }

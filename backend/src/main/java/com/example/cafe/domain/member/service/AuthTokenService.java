@@ -3,12 +3,14 @@ package com.example.cafe.domain.member.service;
 import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.global.util.Ut;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthTokenService {
@@ -25,6 +27,8 @@ public class AuthTokenService {
         claims.put("id", member.getId());
         claims.put("email", member.getEmail());
         claims.put("authority", member.getAuthority());
-        return Ut.Jwt.createToken(jwtSecretKey, jwtExpireSeconds, claims);
+        String token = Ut.Jwt.createToken(jwtSecretKey, jwtExpireSeconds, claims);
+        log.info("JWT 토큰 생성: {}", member.getEmail());
+        return token;
     }
 }

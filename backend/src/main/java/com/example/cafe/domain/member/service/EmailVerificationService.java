@@ -2,7 +2,9 @@ package com.example.cafe.domain.member.service;
 
 import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.domain.member.repository.MemberRepository;
+import com.example.cafe.global.constant.ErrorMessages;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -10,6 +12,7 @@ import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EmailVerificationService {
 
     private final MemberRepository memberRepository;
@@ -36,15 +39,20 @@ public class EmailVerificationService {
         member.setVerificationCode(code);
         member.setVerified(false);
         memberRepository.save(member);
-        // 실제 이메일 발송 (메일 전송 실패 시 예외 발생)
-        mailService.sendSimpleMessage(member.getEmail(), code);
+        try {
+            mailService.sendSimpleMessage(member.getEmail(), code);
+            log.info("이메일 전송 성공: {}", member.getEmail());
+        } catch (Exception e) {
+            log.error("이메일 전송 에러: {}", member.getEmail(), e);
+            throw e;
+        }
     }
 
     // 사용자가 제출한 인증 코드를 검증하여, 일치하면 verified 상태 업데이트
     public boolean verifyEmail(String email, String inputCode) {
         Optional<Member> optionalMember = memberRepository.findByEmail(email);
         if (optionalMember.isEmpty()) {
-            throw new IllegalArgumentException("회원 정보가 없습니다.");
+            throw new IllegalArgumentException(ErrorMessages.MEMBER_NOT_FOUND);
         }
         Member member = optionalMember.get();
         if (member.getVerificationCode() != null && member.getVerificationCode().equals(inputCode)) {
@@ -53,7 +61,7 @@ public class EmailVerificationService {
             memberRepository.save(member);
             return true;
         } else {
-            throw new IllegalArgumentException("인증 코드가 일치하지 않습니다.");
+            throw new IllegalArgumentException(ErrorMessages.INVALID_VERIFICATION_CODE);
         }
     }
 }
