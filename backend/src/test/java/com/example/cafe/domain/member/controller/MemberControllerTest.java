@@ -1,5 +1,6 @@
 package com.example.cafe.domain.member.controller;
 
+import com.example.cafe.domain.member.dto.AdminJoinRequestDto;
 import com.example.cafe.domain.member.dto.LoginRequestDto;
 import com.example.cafe.domain.member.dto.MemberJoinRequestDto;
 import com.example.cafe.domain.member.entity.Member;
@@ -104,5 +105,25 @@ public class MemberControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value("dummytoken"))
                 .andExpect(jsonPath("$.email").value("test@test.com"));
+    }
+
+    @Test
+    @DisplayName("관리자 회원 가입 정상 동작 확인")
+    public void t4() throws Exception {
+        AdminJoinRequestDto request = new AdminJoinRequestDto();
+        request.setEmail("admin@test.com");
+        request.setPassword("admintest");
+        request.setAddress("Seoul");
+        request.setAdminCode("secret");
+
+        Member adminMember = Member.builder().email("admin@test.com").build();
+        Mockito.when(memberService.joinAdmin(anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(adminMember);
+
+        mvc.perform(post("/api/member/join/admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("관리자 회원 가입 성공: admin@test.com")));
     }
 }
