@@ -3,10 +3,8 @@ package com.example.cafe.domain.member.dto;
 import com.example.cafe.global.constant.ErrorMessages;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
 
-@Data
-public class MemberJoinRequestDto {
+public class AdminJoinRequestDto {
     @NotBlank(message = ErrorMessages.EMAIL_REQUIRED)
     @Email(message = ErrorMessages.INVALID_EMAIL_FORMAT)
     private String email;
@@ -16,4 +14,7 @@ public class MemberJoinRequestDto {
 
     @NotBlank(message = ErrorMessages.ADDRESS_REQUIRED)
     private String address;
+
+    @NotBlank(message = ErrorMessages.ADMIN_CODE_REQUIRED)
+    private String adminCode;
 }
