@@ -45,3 +45,6 @@ custom:
     expire-seconds: "#{5}"
   admin:
     admin-code: ADMINCODE
+
+file:
+  upload-dir: src/main/resources/static/images

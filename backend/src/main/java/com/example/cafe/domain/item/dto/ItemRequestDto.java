@@ -1,5 +1,6 @@
 package com.example.cafe.domain.item.dto;
 
+import com.example.cafe.domain.item.entity.ItemCategory;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
@@ -20,5 +21,5 @@ public class ItemRequestDto {
 
     private String imagePath;
     private String content;
-    private String category;
+    private ItemCategory category;
 }
