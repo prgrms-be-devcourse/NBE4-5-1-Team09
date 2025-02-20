@@ -9,7 +9,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
@@ -148,5 +150,53 @@ public class MemberServiceTest {
             memberService.login(email, password);
         });
         assertEquals(ErrorMessages.EMAIL_NOT_VERIFIED, ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("관리자 회원 가입 - 정상 동작 테스트")
+    public void t7() {
+        ReflectionTestUtils.setField(memberService, "secretAdminCode", "adminValue");
+
+        String email = "admin@test.com";
+        String password = "testtest";
+        String address = "test";
+        String providedAdminCode = "adminValue"; // 실제 프로퍼티 값 사용
+
+        when(memberRepository.findByEmail(email)).thenReturn(Optional.empty());
+        String encodedPassword = providedAdminCode;
+        when(passwordEncoder.encode(password)).thenReturn(encodedPassword);
+
+        Member adminMember = Member.builder()
+                .email(email)
+                .password(encodedPassword)
+                .address(address)
+                .authority("ADMIN")
+                .verified(true)
+                .build();
+        when(memberRepository.save(any(Member.class))).thenReturn(adminMember);
+
+        Member result = memberService.joinAdmin(email, password, address, providedAdminCode);
+        assertNotNull(result);
+        assertEquals("ADMIN", result.getAuthority());
+    }
+
+    @Test
+    @DisplayName("관리자 회원 가입 - 중복 이메일 실패 테스트")
+    public void t8() {
+        ReflectionTestUtils.setField(memberService, "secretAdminCode", "adminValue");
+
+        String email = "admin@test.com";
+        String password = "testtest";
+        String address = "test";
+        String providedAdminCode = "adminValue";
+
+        // 이미 등록된 이메일 존재
+        Member existing = Member.builder().email(email).build();
+        when(memberRepository.findByEmail(email)).thenReturn(Optional.of(existing));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
+            memberService.joinAdmin(email, password, address, providedAdminCode);
+        });
+        assertEquals(ErrorMessages.ALREADY_REGISTERED_EMAIL, ex.getMessage());
     }
 }
