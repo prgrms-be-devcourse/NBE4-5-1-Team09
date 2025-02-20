@@ -72,4 +72,18 @@ public class MemberControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("회원 가입 성공: test@test.com")));
     }
+
+    @Test
+    @DisplayName("회원 가입 필수 필드 누락")
+    public void t2() throws Exception {
+        MemberJoinRequestDto request = new MemberJoinRequestDto();
+        request.setEmail("");
+        request.setPassword("");
+        request.setAddress("");
+
+        mvc.perform(post("/api/member/join")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
 }
