@@ -77,4 +77,24 @@ public class MemberServiceTest {
         assertEquals(ErrorMessages.ALREADY_REGISTERED_EMAIL, ex.getMessage());
     }
 
+    @Test
+    @DisplayName("일반 회원 로그인 정상 동작 테스트")
+    public void t3() {
+        String email = "test@test.com";
+        String password = "testtest";
+        String token = "dummyToken";
+        Member member = Member.builder()
+                .email(email)
+                .password("encodedTest")
+                .verified(true)
+                .authority("USER")
+                .build();
+        when(memberRepository.findByEmail(email)).thenReturn(Optional.of(member));
+        when(passwordEncoder.matches(password, member.getPassword())).thenReturn(true);
+        when(authTokenService.genAccessToken(member)).thenReturn(token);
+
+        String resultToken = memberService.login(email, password);
+        assertEquals(token, resultToken);
+    }
+
 }
