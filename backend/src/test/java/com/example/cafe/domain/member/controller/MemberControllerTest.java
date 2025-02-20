@@ -126,4 +126,20 @@ public class MemberControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("관리자 회원 가입 성공: admin@test.com")));
     }
+
+    @Test
+    @DisplayName("관리자 회원 가입 필수 필드 검증 실패")
+    public void testSignUpValidationError() throws Exception {
+        // 필수 필드 누락 (빈 문자열)
+        AdminJoinRequestDto request = new AdminJoinRequestDto();
+        request.setEmail("");
+        request.setPassword("");
+        request.setAddress("");
+        request.setAdminCode("");
+
+        mvc.perform(post("/api/member/join/admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
 }
