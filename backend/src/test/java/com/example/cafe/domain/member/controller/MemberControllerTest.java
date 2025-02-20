@@ -129,7 +129,7 @@ public class MemberControllerTest {
 
     @Test
     @DisplayName("관리자 회원 가입 필수 필드 검증 실패")
-    public void testSignUpValidationError() throws Exception {
+    public void t5() throws Exception {
         // 필수 필드 누락 (빈 문자열)
         AdminJoinRequestDto request = new AdminJoinRequestDto();
         request.setEmail("");
@@ -141,5 +141,22 @@ public class MemberControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("관리자 로그인 정상 동작 확인")
+    public void t6() throws Exception {
+        LoginRequestDto request = new LoginRequestDto();
+        request.setEmail("admin@test.com");
+        request.setPassword("admintest");
+
+        Mockito.when(memberService.loginAdmin(anyString(), anyString())).thenReturn("adminToken");
+
+        mvc.perform(post("/api/member/login/admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("adminToken"))
+                .andExpect(jsonPath("$.email").value("admin@test.com"));
     }
 }
