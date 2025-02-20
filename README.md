@@ -52,7 +52,7 @@ graph LR
 
     %% 백엔드 서비스 영역
     subgraph 백엔드
-      S1["주문 관리 서비스 (WANT, BUY, PAY, BEFORE_DELIVERY, PREPARE_DELIVERY, IN_DELIVERY, POST_DELIVERY, REFUSED)"]
+      S1["주문 관리 서비스"]
       S2["상품 관리 서비스"]
       S3["리뷰 관리 서비스"]
       S4["유저 관리 서비스"]
@@ -109,15 +109,15 @@ mindmap
         결제 진행
         관리자 승인
         배송 준비 및 진행
-      주문 상태
-        WANT
-        BUY
-        PAY
-        BEFORE_DELIVERY
-        PREPARE_DELIVERY
-        IN_DELIVERY
-        POST_DELIVERY
-        REFUSED
+        주문 상태
+        장바구니 담기
+        구매 요청 후 결제 전
+        결제 완료
+        배송 대기
+        배송 준비 중
+        배송 중
+        배송 완료
+        주문 취소
     상품 관리
       상품 목록 조회
       상품 상세 정보 조회
