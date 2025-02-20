@@ -36,7 +36,7 @@ public class MemberServiceTest {
     private EmailVerificationService emailVerificationService;
 
     @Test
-    @DisplayName("일반 회원 가입 정상 동작 테스트")
+    @DisplayName("일반 회원 가입 - 정상 동작 테스트")
     public void t1() throws Exception {
         String email = "test@test.com";
         String password = "testtest";
@@ -63,7 +63,7 @@ public class MemberServiceTest {
     }
 
     @Test
-    @DisplayName("일반 회원 가입 중복 이메일 실패 테스트")
+    @DisplayName("일반 회원 가입 - 중복 이메일 실패 테스트")
     public void t2() {
         String email = "test@test.com";
         String password = "testtest";
@@ -78,7 +78,7 @@ public class MemberServiceTest {
     }
 
     @Test
-    @DisplayName("일반 회원 로그인 정상 동작 테스트")
+    @DisplayName("일반 회원 로그인 - 정상 동작 테스트")
     public void t3() {
         String email = "test@test.com";
         String password = "testtest";
@@ -97,4 +97,16 @@ public class MemberServiceTest {
         assertEquals(token, resultToken);
     }
 
+    @Test
+    @DisplayName("일반 회원 로그인 - 회원 정보 없음 실패 테스트")
+    public void t4() {
+        String email = "test@test.com";
+        String password = "testtest";
+        when(memberRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
+            memberService.login(email, password);
+        });
+        assertEquals(ErrorMessages.MEMBER_NOT_FOUND, ex.getMessage());
+    }
 }
