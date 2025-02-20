@@ -129,4 +129,24 @@ public class MemberServiceTest {
         });
         assertEquals(ErrorMessages.PASSWORD_MISMATCH, ex.getMessage());
     }
+
+    @Test
+    @DisplayName("일반 회원 로그인 - 이메일 미인증 실패 테스트")
+    public void t6() {
+        String email = "test@test.com";
+        String password = "testtest";
+        Member member = Member.builder()
+                .email(email)
+                .password("encodedTest")
+                .verified(false)
+                .authority("USER")
+                .build();
+        when(memberRepository.findByEmail(email)).thenReturn(Optional.of(member));
+        when(passwordEncoder.matches(password, member.getPassword())).thenReturn(true);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
+            memberService.login(email, password);
+        });
+        assertEquals(ErrorMessages.EMAIL_NOT_VERIFIED, ex.getMessage());
+    }
 }
