@@ -303,4 +303,24 @@ public class MemberServiceTest {
         assertEquals("ADMIN", result.getAuthority());
         assertTrue(result.isVerified());
     }
+
+    @Test
+    @DisplayName("관리자 회원 가입 - 비밀번호 암호화 예외 상황 테스트")
+    public void t13() {
+        ReflectionTestUtils.setField(memberService, "secretAdminCode", "adminValue");
+
+        String email = "admin@test.com";
+        String password = "testtest";
+        String address = "test";
+        String providedAdminCode = "adminValue";
+
+        when(memberRepository.findByEmail(email)).thenReturn(Optional.empty());
+        // 암호화 중 예외 발생 시뮬레이션
+        when(passwordEncoder.encode(password)).thenThrow(new RuntimeException("Encoding error"));
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> {
+            memberService.joinAdmin(email, password, address, providedAdminCode);
+        });
+        assertEquals("Encoding error", ex.getMessage());
+    }
 }
