@@ -216,4 +216,33 @@ public class MemberServiceTest {
         });
         assertEquals(ErrorMessages.INVALID_ADMIN_CODE, ex.getMessage());
     }
+
+    @Test
+    @DisplayName("관리자 회원 가입 - 비밀번호 암호화 호출 확인 테스트")
+    public void t10() {
+        ReflectionTestUtils.setField(memberService, "secretAdminCode", "adminValue");
+
+        String email = "admin@test.com";
+        String password = "testtest";
+        String address = "test";
+        String providedAdminCode = "adminValue";
+
+        when(memberRepository.findByEmail(email)).thenReturn(Optional.empty());
+        String encodedPassword = "encodedAdminTest";
+        when(passwordEncoder.encode(password)).thenReturn(encodedPassword);
+
+        Member adminMember = Member.builder()
+                .email(email)
+                .password(encodedPassword)
+                .address(address)
+                .authority("ADMIN")
+                .verified(true)
+                .build();
+        when(memberRepository.save(any(Member.class))).thenReturn(adminMember);
+
+        Member result = memberService.joinAdmin(email, password, address, providedAdminCode);
+        // 비밀번호 암호화가 한 번 호출되었는지 검증
+        verify(passwordEncoder, times(1)).encode(password);
+        assertEquals(encodedPassword, result.getPassword());
+    }
 }
