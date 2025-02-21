@@ -126,4 +126,35 @@ public class MemberController {
         response.addCookie(cookie);
         return ResponseEntity.ok("로그아웃 성공");
     }
+
+    @DeleteMapping("/delete")
+    public ResponseEntity<?> deleteMember(
+            @RequestBody @Validated LoginRequestDto request,
+            @RequestHeader("Authorization") String authHeader) {
+
+        // Authorization 헤더가 없거나 Bearer 토큰 형식이 아닌 경우
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("인증 토큰이 제공되지 않았습니다.");
+        }
+
+        String accessToken = authHeader.substring("Bearer ".length());
+        // 액세스 토큰 검증 및 클레임 추출
+        Map<String, Object> claims = authTokenService.verifyToken(accessToken);
+        if (claims == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("유효하지 않은 액세스 토큰입니다.");
+        }
+
+        String tokenEmail = (String) claims.get("email");
+        // 토큰에 포함된 이메일과 요청에 담긴 이메일이 일치하는지 확인
+        if (!tokenEmail.equals(request.getEmail())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("토큰 정보와 요청 이메일이 일치하지 않습니다.");
+        }
+
+        // 본인 인증 후 회원 탈퇴 진행
+        memberService.deleteMember(request.getEmail(), request.getPassword());
+        return ResponseEntity.ok("회원 탈퇴 성공");
+    }
 }

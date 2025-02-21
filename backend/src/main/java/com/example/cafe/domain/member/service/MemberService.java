@@ -121,4 +121,12 @@ public class MemberService {
     public boolean verifyEmail(String email, String code) {
         return emailVerificationService.verifyEmail(email, code);
     }
+
+    // 회원 탈퇴 기능
+    @Transactional
+    public void deleteMember(String email, String rawPassword) {
+        Member member = login(email, rawPassword);
+        memberRepository.delete(member);
+        log.info("회원 탈퇴 성공: {}", email);
+    }
 }
