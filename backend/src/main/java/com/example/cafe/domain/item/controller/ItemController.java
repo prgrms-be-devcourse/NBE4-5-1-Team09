@@ -6,7 +6,6 @@ import com.example.cafe.domain.item.service.ItemService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,9 +18,6 @@ import java.util.List;
 @RequestMapping("/items")
 @RequiredArgsConstructor
 public class ItemController {
-
-    @Value("${file.upload-dir}")
-    private String uploadDir;
 
     private final ItemService itemService;
 
@@ -49,8 +45,12 @@ public class ItemController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ItemResponseDto> updateItem(@PathVariable Long id, @RequestBody @Valid ItemRequestDto itemRequestDto) {
-        return ResponseEntity.ok(itemService.updateItem(id, itemRequestDto));
+    public ResponseEntity<ItemResponseDto> updateItem(@PathVariable Long id, @RequestPart(value = "item") @Valid String item,
+                                                      @RequestPart(value = "image", required = false) MultipartFile imageFile) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ItemRequestDto itemRequestDto = objectMapper.readValue(item, ItemRequestDto.class);
+
+        return ResponseEntity.ok(itemService.updateItem(id, itemRequestDto, imageFile));
     }
 
     @DeleteMapping("/{id}")
