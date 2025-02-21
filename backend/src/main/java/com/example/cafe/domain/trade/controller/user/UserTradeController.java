@@ -14,7 +14,7 @@ public class UserTradeController {
     private final UserTradeService service;
 
     @PostMapping("/cart")
-    public ResponseEntity<OrderResponseDto> orderWithCart(@RequestParam("id") Long memberId) {
+    public ResponseEntity<OrderResponseDto> orderWithCart(@RequestParam("memberId") Long memberId) {
         return ResponseEntity.ok(service.tradeWithCart(memberId));
     }
 
