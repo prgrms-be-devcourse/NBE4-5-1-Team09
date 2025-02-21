@@ -44,8 +44,8 @@ public class Item {
     @Column(name = "item_status", nullable = false)
     private ItemStatus itemStatus;
 
-    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CartItem> cartItems;
+//    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private List<CartItem> cartItems;
 
     public void autoCheckQuantityForSetStatus() {
         if (this.getStock() <= 0) {
