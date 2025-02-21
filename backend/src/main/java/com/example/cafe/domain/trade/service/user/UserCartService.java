@@ -2,7 +2,8 @@ package com.example.cafe.domain.trade.service.user;
 
 import com.example.cafe.domain.item.entity.Item;
 import com.example.cafe.domain.item.respository.ItemRepository;
-import com.example.cafe.domain.trade.domain.dto.ItemCartDto;
+import com.example.cafe.domain.trade.domain.dto.ItemCartRequestDto;
+import com.example.cafe.domain.trade.domain.dto.ItemCartResponseDto;
 import com.example.cafe.domain.trade.domain.entity.Cart;
 import com.example.cafe.domain.trade.domain.entity.CartItem;
 import com.example.cafe.domain.trade.repository.CartItemRepository;
@@ -13,8 +14,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.example.cafe.domain.trade.domain.dto.ItemCartResponseDto.*;
+
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class UserCartService {
     private final TradeRepository tradeRepository;
     private final TradeItemRepository tradeItemRepository;
@@ -22,9 +29,7 @@ public class UserCartService {
     private final CartItemRepository cartItemRepository;
     private final ItemRepository itemRepository;
 
-
-    @Transactional
-    public void addItemToCart(ItemCartDto addItem) {
+    public ItemCartResponseDto addItemToCart(ItemCartRequestDto addItem) {
         Cart cart = getCart(addItem);
 
         Item item = itemRepository.findById(addItem.getItemId()).orElseThrow(() -> new RuntimeException("해당 아이템을 찾을 수 없어 카트에 추가하지 못하였습니다."));
@@ -43,10 +48,13 @@ public class UserCartService {
                     .build();
             cart.getCartItems().add(cartItem);
         }
+
+        return getItemCartResponseDto(cart);
     }
 
-    @Transactional
-    public void QuantityItemToCart(ItemCartDto editItem) {
+
+
+    public ItemCartResponseDto QuantityItemToCart(ItemCartRequestDto editItem) {
         Cart cart = getCart(editItem);
 
         Item item = itemRepository.findById(editItem.getItemId()).orElseThrow(() -> new RuntimeException("해당 아이템을 찾을 수 없어 카트에 추가하지 못하였습니다."));
@@ -67,9 +75,27 @@ public class UserCartService {
         else {
             cartItem.setQuantity(cartItem.getQuantity() - editItem.getQuantity());
         }
+
+        return getItemCartResponseDto(cart);
     }
 
-    private Cart getCart(ItemCartDto itemCartDto) {
+
+
+    private Cart getCart(ItemCartRequestDto itemCartDto) {
         return cartRepository.findByMemberId(itemCartDto.getMemberId()).orElseThrow(() -> new RuntimeException("유저 [" + itemCartDto.getMemberId() + "]의 카트를 찾을 수 없습니다."));
+    }
+
+    private ItemCartResponseDto getItemCartResponseDto(Cart cart) {
+        List<ItemCartItemInfo> cartItemInfos = cart.getCartItems().stream().map(ci -> new ItemCartItemInfo(
+                ci.getItem().getId(),
+                ci.getItem().getItemName(),
+                ci.getItem().getPrice(),
+                ci.getItem().getItemStatus(),
+                ci.getQuantity()
+        )).collect(Collectors.toList());
+
+        int totalPrice = cart.getCartItems().stream().mapToInt(ci -> ci.getItem().getPrice() * ci.getQuantity()).sum();
+
+        return new ItemCartResponseDto(cart.getId(), cartItemInfos, totalPrice);
     }
 }

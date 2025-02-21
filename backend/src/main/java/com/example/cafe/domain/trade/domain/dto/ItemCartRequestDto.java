@@ -3,7 +3,7 @@ package com.example.cafe.domain.trade.domain.dto;
 import lombok.Data;
 
 @Data
-public class ItemCartDto {
+public class ItemCartRequestDto {
     private Long memberId;
     private Long itemId;
     private int quantity;
