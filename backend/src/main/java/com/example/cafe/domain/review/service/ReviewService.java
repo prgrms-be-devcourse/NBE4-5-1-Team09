@@ -34,9 +34,9 @@ public class ReviewService {
         }
 
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new RuntimeException("Member not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found"));
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new RuntimeException("Item not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Item not found"));
 
         Review review = new Review();
         review.setMember(member);
@@ -56,7 +56,7 @@ public class ReviewService {
         }
 
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new RuntimeException("Review not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Review not found"));
 
         review.setReview_content(reviewContent);
         review.setRating(rating);
@@ -68,7 +68,7 @@ public class ReviewService {
     // 리뷰 삭제
     public void deleteReview(Long reviewId) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new RuntimeException("Review not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Review not found"));
 
         reviewRepository.delete(review);
     }
@@ -92,12 +92,12 @@ public class ReviewService {
             }
 
             if (reviews.isEmpty()) {
-                throw new RuntimeException("아직 리뷰가 없습니다.");
+                throw new IllegalArgumentException("아직 리뷰가 없습니다.");
             }
 
             return reviews;
         } catch (DataAccessException e) {
-            throw new RuntimeException("상품별 리뷰 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
+            throw new IllegalArgumentException("상품별 리뷰 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
         }
     }
 
@@ -107,7 +107,7 @@ public class ReviewService {
         try {
             return reviewRepository.findAverageRatingByItem_Id(itemId);
         } catch (DataAccessException e) {
-            throw new RuntimeException("평균 평점 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
+            throw new IllegalArgumentException("평균 평점 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
         }
     }
 
@@ -117,7 +117,7 @@ public class ReviewService {
         try {
             return reviewRepository.findAll();
         } catch (DataAccessException e) {
-            throw new RuntimeException("전체 리뷰 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
+            throw new IllegalArgumentException("전체 리뷰 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
         }
     }
 }
