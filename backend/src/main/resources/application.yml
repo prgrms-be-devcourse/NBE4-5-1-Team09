@@ -9,6 +9,10 @@ spring:
   profiles:
     active: dev
 
+  config:
+    import: "classpath:application-SECRET-KEY.yml"
+
+
   datasource:
     url: jdbc:h2:./db_dev;MODE=MySQL
     username: sa

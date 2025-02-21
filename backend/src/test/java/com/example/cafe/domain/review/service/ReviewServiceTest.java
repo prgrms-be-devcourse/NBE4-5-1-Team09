@@ -1,7 +1,7 @@
 package com.example.cafe.domain.review.service;
 
 import com.example.cafe.domain.item.entity.Item;
-import com.example.cafe.domain.item.respository.ItemRepository;
+import com.example.cafe.domain.item.repository.ItemRepository;
 import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.domain.member.repository.MemberRepository;
 import com.example.cafe.domain.review.entity.Review;
@@ -14,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataAccessException;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -23,6 +24,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
 class ReviewServiceTest {
 
@@ -48,6 +50,7 @@ class ReviewServiceTest {
 
     @BeforeEach
     void setUp() {
+        memberRepository.deleteAll();
         // Member 객체 초기화
         testMember = new Member();
         testMember.setId(1L);
