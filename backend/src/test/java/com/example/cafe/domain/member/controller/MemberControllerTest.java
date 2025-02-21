@@ -1,9 +1,6 @@
 package com.example.cafe.domain.member.controller;
 
-import com.example.cafe.domain.member.dto.AdminJoinRequestDto;
-import com.example.cafe.domain.member.dto.EmailVerificationRequestDto;
-import com.example.cafe.domain.member.dto.LoginRequestDto;
-import com.example.cafe.domain.member.dto.MemberJoinRequestDto;
+import com.example.cafe.domain.member.dto.*;
 import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.domain.member.service.AuthTokenService;
 import com.example.cafe.domain.member.service.MemberService;
@@ -23,6 +20,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,7 +28,7 @@ import java.util.Map;
 import static org.hamcrest.Matchers.containsString;
 import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -64,6 +62,16 @@ public class MemberControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+
+    private final String sampleAccessToken = "sampleAccessToken";
+    private final String testEmail = "test@test.com";
+
+    private Map<String, Object> createClaims(String email) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("email", email);
+        return claims;
+    }
 
     @Test
     @DisplayName("회원 가입 정상 동작 확인")
@@ -267,5 +275,93 @@ public class MemberControllerTest {
                 .andExpect(content().string(containsString("회원 탈퇴 성공")));
     }
 
+    @Test
+    @DisplayName("프로필 조회 테스트")
+    public void t12() throws Exception {
+        ProfileResponseDto profile = new ProfileResponseDto();
+        profile.setEmail(testEmail);
+        profile.setAddress("Old Address");
+        profile.setAuthority("USER");
 
+        when(authTokenService.verifyToken(anyString())).thenReturn(createClaims(testEmail));
+        when(memberService.getProfile(testEmail)).thenReturn(profile);
+
+        mvc.perform(MockMvcRequestBuilders.get("/api/member/profile")
+                        .header("Authorization", "Bearer " + sampleAccessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value(testEmail))
+                .andExpect(jsonPath("$.address").value("Old Address"));
+    }
+
+    @Test
+    @DisplayName("프로필 수정 테스트")
+    public void t13() throws Exception {
+        String newAddress = "New Address";
+        ProfileUpdateRequestDto updateDto = new ProfileUpdateRequestDto();
+        updateDto.setAddress(newAddress);
+
+        ProfileResponseDto updatedProfile = new ProfileResponseDto();
+        updatedProfile.setEmail(testEmail);
+        updatedProfile.setAddress(newAddress);
+        updatedProfile.setAuthority("USER");
+
+        when(authTokenService.verifyToken(anyString())).thenReturn(createClaims(testEmail));
+        when(memberService.updateProfile(eq(testEmail), any(ProfileUpdateRequestDto.class)))
+                .thenReturn(updatedProfile);
+
+        mvc.perform(MockMvcRequestBuilders.put("/api/member/profile")
+                        .header("Authorization", "Bearer " + sampleAccessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.address").value(newAddress));
+    }
+
+    @Test
+    @DisplayName("비밀번호 변경 테스트")
+    public void t14() throws Exception {
+        ChangePasswordRequestDto changeDto = new ChangePasswordRequestDto();
+        changeDto.setOldPassword("oldPass");
+        changeDto.setNewPassword("newPass");
+
+        when(authTokenService.verifyToken(anyString())).thenReturn(createClaims(testEmail));
+        // 서비스 메서드가 정상 동작한다고 가정하므로 예외가 발생하지 않음
+
+        mvc.perform(MockMvcRequestBuilders.post("/api/member/change-password")
+                        .header("Authorization", "Bearer " + sampleAccessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(changeDto)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("비밀번호 변경 성공")));
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 요청 테스트")
+    public void t15() throws Exception {
+        PasswordResetRequestDto resetReq = new PasswordResetRequestDto();
+        resetReq.setEmail(testEmail);
+
+        // 서비스 호출 시 예외가 발생하지 않는다고 가정
+        mvc.perform(MockMvcRequestBuilders.post("/api/member/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(resetReq)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("비밀번호 재설정 이메일을 전송했습니다.")));
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 확인 테스트")
+    public void t16() throws Exception {
+        PasswordResetConfirmRequestDto confirmDto = new PasswordResetConfirmRequestDto();
+        confirmDto.setEmail(testEmail);
+        confirmDto.setResetCode("123456");
+        confirmDto.setNewPassword("newPassword");
+
+        // 서비스 메서드가 정상적으로 작동하여 예외가 발생하지 않는다고 가정
+        mvc.perform(MockMvcRequestBuilders.post("/api/member/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(confirmDto)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("비밀번호 재설정 성공")));
+    }
 }

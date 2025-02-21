@@ -24,8 +24,7 @@ import java.util.Optional;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -47,6 +46,10 @@ public class MemberIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    private final String userEmail = "testuser@test.com";
+    private final String userPassword = "originalPass";
+
 
     @BeforeEach
     public void setUp() {
@@ -278,5 +281,140 @@ public class MemberIntegrationTest {
         // 4. 탈퇴 후, 해당 회원이 DB에 존재하지 않는지 확인
         Optional<Member> deletedMember = memberRepository.findByEmail(email);
         assertFalse(deletedMember.isPresent(), "회원을 정상적으로 삭제해야 합니다.");
+    }
+
+    @Test
+    @DisplayName("프로필 조회 및 수정 테스트")
+    public void testProfileViewAndUpdate() throws Exception {
+        // 1. 회원가입 및 이메일 인증이 완료된 회원 생성
+        String joinRequest = "{ \"email\": \"" + userEmail + "\", \"password\": \"" + userPassword + "\", \"address\": \"Old Address\" }";
+        mvc.perform(post("/api/member/join")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(joinRequest))
+                .andExpect(status().isOk());
+
+        // 수동으로 이메일 인증 처리 (DB 업데이트)
+        Member member = memberRepository.findByEmail(userEmail).orElseThrow();
+        member.setVerified(true);
+        memberRepository.save(member);
+
+        // 2. 로그인하여 액세스 토큰 획득
+        String loginRequest = "{ \"email\": \"" + userEmail + "\", \"password\": \"" + userPassword + "\" }";
+        MvcResult loginResult = mvc.perform(post("/api/member/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequest))
+                .andExpect(status().isOk())
+                .andReturn();
+        String loginResponse = loginResult.getResponse().getContentAsString();
+        Map<String, String> loginResponseMap = objectMapper.readValue(loginResponse, new TypeReference<Map<String, String>>() {});
+        String accessToken = loginResponseMap.get("token");
+        assertNotNull(accessToken);
+
+        // 3. 프로필 조회
+        MvcResult profileResult = mvc.perform(get("/api/member/profile")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value(userEmail))
+                .andExpect(jsonPath("$.address").value("Old Address"))
+                .andReturn();
+
+        // 4. 프로필 수정 (주소 변경)
+        String newAddress = "New Address";
+        String profileUpdateRequest = "{ \"address\": \"" + newAddress + "\" }";
+        MvcResult updateResult = mvc.perform(put("/api/member/profile")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(profileUpdateRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.address").value(newAddress))
+                .andReturn();
+    }
+
+    @Test
+    @DisplayName("비밀번호 변경 테스트")
+    public void testChangePassword() throws Exception {
+        // 1. 회원가입 및 이메일 인증 완료
+        String joinRequest = "{ \"email\": \"" + userEmail + "\", \"password\": \"" + userPassword + "\", \"address\": \"User Address\" }";
+        mvc.perform(post("/api/member/join")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(joinRequest))
+                .andExpect(status().isOk());
+        Member member = memberRepository.findByEmail(userEmail).orElseThrow();
+        member.setVerified(true);
+        memberRepository.save(member);
+
+        // 2. 로그인하여 액세스 토큰 획득
+        String loginRequest = "{ \"email\": \"" + userEmail + "\", \"password\": \"" + userPassword + "\" }";
+        MvcResult loginResult = mvc.perform(post("/api/member/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequest))
+                .andExpect(status().isOk())
+                .andReturn();
+        String loginResponse = loginResult.getResponse().getContentAsString();
+        Map<String, String> loginResponseMap = objectMapper.readValue(loginResponse, new TypeReference<Map<String, String>>() {});
+        String accessToken = loginResponseMap.get("token");
+        assertNotNull(accessToken);
+
+        // 3. 비밀번호 변경 요청
+        String newPassword = "newPassword123";
+        String changePasswordRequest = "{ \"oldPassword\": \"" + userPassword + "\", \"newPassword\": \"" + newPassword + "\" }";
+        mvc.perform(post("/api/member/change-password")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(changePasswordRequest))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("비밀번호 변경 성공")));
+
+        // 4. 변경된 비밀번호로 재로그인 시도
+        String reLoginRequest = "{ \"email\": \"" + userEmail + "\", \"password\": \"" + newPassword + "\" }";
+        mvc.perform(post("/api/member/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reLoginRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value(userEmail));
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 (요청 및 확인) 테스트")
+    public void testPasswordReset() throws Exception {
+        // 1. 회원가입 및 이메일 인증 완료
+        String joinRequest = "{ \"email\": \"" + userEmail + "\", \"password\": \"" + userPassword + "\", \"address\": \"User Address\" }";
+        mvc.perform(post("/api/member/join")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(joinRequest))
+                .andExpect(status().isOk());
+        Member member = memberRepository.findByEmail(userEmail).orElseThrow();
+        member.setVerified(true);
+        memberRepository.save(member);
+
+        // 2. 비밀번호 재설정 요청 (forgot-password)
+        String forgotRequest = "{ \"email\": \"" + userEmail + "\" }";
+        mvc.perform(post("/api/member/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(forgotRequest))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("비밀번호 재설정 이메일을 전송했습니다.")));
+
+        // 3. DB에서 재설정 코드를 조회 (회원가입 후 requestPasswordReset 메서드에서 저장됨)
+        Member updatedMember = memberRepository.findByEmail(userEmail).orElseThrow();
+        String resetCode = updatedMember.getResetPasswordCode();
+        assertNotNull(resetCode, "재설정 코드가 저장되어 있어야 합니다.");
+
+        // 4. 비밀번호 재설정 확인 (reset-password)
+        String newPassword = "resetNewPass123";
+        String resetPasswordRequest = "{ \"email\": \"" + userEmail + "\", \"resetCode\": \"" + resetCode + "\", \"newPassword\": \"" + newPassword + "\" }";
+        mvc.perform(post("/api/member/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(resetPasswordRequest))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("비밀번호 재설정 성공")));
+
+        // 5. 변경된 비밀번호로 로그인 시도하여 확인
+        String reLoginRequest = "{ \"email\": \"" + userEmail + "\", \"password\": \"" + newPassword + "\" }";
+        mvc.perform(post("/api/member/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reLoginRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value(userEmail));
     }
 }
