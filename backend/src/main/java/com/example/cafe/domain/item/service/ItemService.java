@@ -92,6 +92,8 @@ public class ItemService {
         item.setContent(itemRequestDto.getContent());
         item.setCategory(itemRequestDto.getCategory());
 
+        item.autoCheckQuantityForSetStatus();
+
         return new ItemResponseDto(item);
     }
 

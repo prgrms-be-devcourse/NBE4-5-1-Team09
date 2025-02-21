@@ -3,7 +3,6 @@ package com.example.cafe.domain.item.controller;
 import com.example.cafe.domain.item.dto.ItemRequestDto;
 import com.example.cafe.domain.item.dto.ItemResponseDto;
 import com.example.cafe.domain.item.service.ItemService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -32,25 +31,19 @@ public class ItemController {
     }
 
     @PostMapping
-    public ResponseEntity<ItemResponseDto> createItem(@RequestPart("item") String item,
+    public ResponseEntity<ItemResponseDto> createItem(@RequestPart("item") ItemRequestDto itemRequestDto,
                                                       @RequestPart("image") MultipartFile imageFile) throws IOException {
 
-        // item을 ItemRequestDto로 변환
-        ObjectMapper objectMapper = new ObjectMapper();
-        ItemRequestDto itemRequestDto = objectMapper.readValue(item, ItemRequestDto.class);
-
-        // 아이템 생성
         ItemResponseDto savedItem = itemService.createItem(itemRequestDto, imageFile);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedItem);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ItemResponseDto> updateItem(@PathVariable Long id, @RequestPart(value = "item") @Valid String item,
+    public ResponseEntity<ItemResponseDto> updateItem(@PathVariable Long id, @RequestPart(value = "item") @Valid ItemRequestDto itemRequestDto,
                                                       @RequestPart(value = "image", required = false) MultipartFile imageFile) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        ItemRequestDto itemRequestDto = objectMapper.readValue(item, ItemRequestDto.class);
 
-        return ResponseEntity.ok(itemService.updateItem(id, itemRequestDto, imageFile));
+        ItemResponseDto updatedItem = itemService.updateItem(id, itemRequestDto, imageFile);
+        return ResponseEntity.ok(updatedItem);
     }
 
     @DeleteMapping("/{id}")
