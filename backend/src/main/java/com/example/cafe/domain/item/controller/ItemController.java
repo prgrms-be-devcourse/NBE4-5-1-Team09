@@ -8,9 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -31,18 +29,16 @@ public class ItemController {
     }
 
     @PostMapping
-    public ResponseEntity<ItemResponseDto> createItem(@RequestPart("item") ItemRequestDto itemRequestDto,
-                                                      @RequestPart("image") MultipartFile imageFile) throws IOException {
+    public ResponseEntity<ItemResponseDto> createItem(@RequestBody ItemRequestDto itemRequestDto) {
 
-        ItemResponseDto savedItem = itemService.createItem(itemRequestDto, imageFile);
+        ItemResponseDto savedItem = itemService.createItem(itemRequestDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedItem);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ItemResponseDto> updateItem(@PathVariable Long id, @RequestPart(value = "item") @Valid ItemRequestDto itemRequestDto,
-                                                      @RequestPart(value = "image", required = false) MultipartFile imageFile) throws IOException {
+    public ResponseEntity<ItemResponseDto> updateItem(@PathVariable Long id, @RequestBody @Valid ItemRequestDto itemRequestDto) {
 
-        ItemResponseDto updatedItem = itemService.updateItem(id, itemRequestDto, imageFile);
+        ItemResponseDto updatedItem = itemService.updateItem(id, itemRequestDto);
         return ResponseEntity.ok(updatedItem);
     }
 

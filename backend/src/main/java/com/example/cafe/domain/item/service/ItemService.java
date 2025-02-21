@@ -43,56 +43,34 @@ public class ItemService {
     }
 
     @Transactional
-    public ItemResponseDto createItem(ItemRequestDto itemRequestDto, MultipartFile imageFile) throws IOException {
+    public ItemResponseDto createItem(ItemRequestDto itemRequestDto) {
 
-        String imagePath = saveImage(imageFile);  // 이미지 경로 생성
-
-        // 이미지 경로를 ItemRequestDto에 설정
-        itemRequestDto.setImagePath(imagePath);
-
-        // Item 객체 생성
         Item item = new Item();
         item.setItemName(itemRequestDto.getItemName());
         item.setPrice(itemRequestDto.getPrice());
         item.setStock(itemRequestDto.getStock());
+        item.setImagePath(itemRequestDto.getImagePath());
         item.setContent(itemRequestDto.getContent());
         item.setCategory(itemRequestDto.getCategory());
         item.setAvgRating(0.0);
         item.setItemStatus(ItemStatus.ON_SALE);
-        item.setImagePath(imagePath);  // 서비스에서 처리된 이미지 경로 저장
 
-        // 아이템 저장
-        Item savedItem = itemRepository.save(item);
-
-        return new ItemResponseDto(savedItem);
+        Item savedProduct = itemRepository.save(item);
+        return new ItemResponseDto(savedProduct);
     }
 
     @Transactional
-    public ItemResponseDto updateItem(Long id, ItemRequestDto itemRequestDto, MultipartFile imageFile) throws IOException {
+    public ItemResponseDto updateItem(Long id, ItemRequestDto itemRequestDto) {
 
         Item item = itemRepository.findById(id)
                 .orElseThrow(() -> new ItemNotFoundException(id));
 
-        // 새로운 이미지가 있으면 기존 이미지 삭제 후 저장
-        if (imageFile != null && !imageFile.isEmpty()) {
-            String oldImagePath = item.getImagePath();  // 기존 이미지 경로 저장
-            String newImagePath = saveImage(imageFile); // 새 이미지 저장
-            item.setImagePath(newImagePath);
-
-            // 기존 이미지 삭제
-            if (oldImagePath != null) {
-                Path oldImageFile = Paths.get(oldImagePath);
-                Files.deleteIfExists(oldImageFile);
-            }
-        }
-
         item.setItemName(itemRequestDto.getItemName());
         item.setPrice(itemRequestDto.getPrice());
         item.setStock(itemRequestDto.getStock());
+        item.setImagePath(itemRequestDto.getImagePath());
         item.setContent(itemRequestDto.getContent());
         item.setCategory(itemRequestDto.getCategory());
-
-        item.autoCheckQuantityForSetStatus();
 
         return new ItemResponseDto(item);
     }
