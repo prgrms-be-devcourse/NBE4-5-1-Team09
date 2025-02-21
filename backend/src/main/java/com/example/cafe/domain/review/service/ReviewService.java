@@ -9,6 +9,8 @@ import com.example.cafe.domain.review.entity.ReviewSortType;
 import com.example.cafe.domain.review.repository.ReviewRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.dao.DataAccessException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,7 +28,11 @@ public class ReviewService {
     private MemberRepository memberRepository;
 
     // 리뷰 작성
-    public Review createReview(Long memberId, Long itemId, String reviewContent, double rating) {
+    public Review createReview(Long memberId, Long itemId, String reviewContent, Double rating) {
+        if (reviewContent == null || reviewContent.trim().isEmpty() || rating == null) {
+            throw new IllegalArgumentException("리뷰 내용과 평점은 필수 항목입니다.");
+        }
+
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new RuntimeException("Member not found"));
         Item item = itemRepository.findById(itemId)
@@ -44,7 +50,11 @@ public class ReviewService {
     }
 
     // 리뷰 수정
-    public Review updateReview(Long reviewId, String reviewContent, double rating) {
+    public Review updateReview(Long reviewId, String reviewContent, Double rating) {
+        if (reviewContent == null || reviewContent.trim().isEmpty() || rating == null) {
+            throw new IllegalArgumentException("리뷰 내용과 평점은 필수 항목입니다.");
+        }
+
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new RuntimeException("Review not found"));
 
@@ -64,25 +74,50 @@ public class ReviewService {
     }
 
     // 상품별 리뷰 조회
+    @Retryable(value = DataAccessException.class, maxAttempts = 3)
     public List<Review> getReviewsByItem(Long itemId, ReviewSortType sortType) {
-        switch (sortType) {
-            case HIGHEST_RATING:
-                return reviewRepository.findByItem_IdOrderByRatingDesc(itemId);
-            case LOWEST_RATING:
-                return reviewRepository.findByItem_IdOrderByRatingAsc(itemId);
-            case LATEST:
-            default:
-                return reviewRepository.findByItem_IdOrderByCreatedAtDesc(itemId);
+        try {
+            List<Review> reviews;
+            switch (sortType) {
+                case HIGHEST_RATING:
+                    reviews = reviewRepository.findByItem_IdOrderByRatingDesc(itemId);
+                    break;
+                case LOWEST_RATING:
+                    reviews = reviewRepository.findByItem_IdOrderByRatingAsc(itemId);
+                    break;
+                case LATEST:
+                default:
+                    reviews = reviewRepository.findByItem_IdOrderByCreatedAtDesc(itemId);
+                    break;
+            }
+
+            if (reviews.isEmpty()) {
+                throw new RuntimeException("아직 리뷰가 없습니다.");
+            }
+
+            return reviews;
+        } catch (DataAccessException e) {
+            throw new RuntimeException("상품별 리뷰 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
         }
     }
 
     // 평균 평점 조회
+    @Retryable(value = DataAccessException.class, maxAttempts = 3)
     public Double getAverageRating(Long itemId) {
-        return reviewRepository.findAverageRatingByItem_Id(itemId);
+        try {
+            return reviewRepository.findAverageRatingByItem_Id(itemId);
+        } catch (DataAccessException e) {
+            throw new RuntimeException("평균 평점 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
+        }
     }
 
     // 전체 리뷰 조회 (관리자용)
+    @Retryable(value = DataAccessException.class, maxAttempts = 3)
     public List<Review> findAllReviews() {
-        return reviewRepository.findAll();
+        try {
+            return reviewRepository.findAll();
+        } catch (DataAccessException e) {
+            throw new RuntimeException("전체 리뷰 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
+        }
     }
 }
