@@ -2,11 +2,13 @@ package com.example.cafe.global.util;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.Map;
 
+@Component
 public class Ut {
     public static class Jwt {
         public static String createToken(String keyString, int expireSeconds, Map<String, Object> claims) {

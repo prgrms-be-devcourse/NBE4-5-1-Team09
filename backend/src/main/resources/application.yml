@@ -5,14 +5,12 @@ spring:
   output:
     ansi:
       enabled: always
-
   profiles:
     active: dev
-
   config:
-    import: "classpath:application-SECRET-KEY.yml"
-
-
+    import:
+      - "classpath:application-SECRET-KEY.yml"
+      - "classpath:application-secret.yml"
   datasource:
     url: jdbc:h2:./db_dev;MODE=MySQL
     username: sa
@@ -20,7 +18,6 @@ spring:
     driver-class-name: org.h2.Driver
     hikari:
       auto-commit: false
-
   jpa:
     open-in-view: false
     hibernate:
@@ -33,7 +30,6 @@ spring:
         use_sql_comments: true
         default_batch_fetch_size: 100
 
-
 logging:
   level:
     org.hibernate.SQL: DEBUG
@@ -41,15 +37,10 @@ logging:
     org.hibernate.orm.jdbc.extract: TRACE
     org.springframework.transaction.interceptor: TRACE
 
-
-
 custom:
   jwt:
-    secret-key: abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890
     expire-seconds: "#{5}"
-  admin:
-    admin-code: ADMINCODE
-
+    refresh-expire-seconds: 604800
 
 file:
   upload-dir: src/main/resources/static/images
