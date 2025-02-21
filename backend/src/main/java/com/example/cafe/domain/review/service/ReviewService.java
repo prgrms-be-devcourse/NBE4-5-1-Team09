@@ -9,7 +9,6 @@ import com.example.cafe.domain.review.entity.ReviewSortType;
 import com.example.cafe.domain.review.repository.ReviewRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.dao.DataAccessException;
 
 import java.time.LocalDateTime;
@@ -73,51 +72,72 @@ public class ReviewService {
         reviewRepository.delete(review);
     }
 
-    // 상품별 리뷰 조회
-    @Retryable(value = DataAccessException.class, maxAttempts = 3)
+    // 상품별 리뷰 조회 (수동 재시도 3번)
     public List<Review> getReviewsByItem(Long itemId, ReviewSortType sortType) {
-        try {
-            List<Review> reviews;
-            switch (sortType) {
-                case HIGHEST_RATING:
-                    reviews = reviewRepository.findByItem_IdOrderByRatingDesc(itemId);
-                    break;
-                case LOWEST_RATING:
-                    reviews = reviewRepository.findByItem_IdOrderByRatingAsc(itemId);
-                    break;
-                case LATEST:
-                default:
-                    reviews = reviewRepository.findByItem_IdOrderByCreatedAtDesc(itemId);
-                    break;
-            }
+        int maxAttempts = 3;
+        int attempt = 0;
+        while (attempt < maxAttempts) {
+            try {
+                List<Review> reviews;
+                switch (sortType) {
+                    case HIGHEST_RATING:
+                        reviews = reviewRepository.findByItem_IdOrderByRatingDesc(itemId);
+                        break;
+                    case LOWEST_RATING:
+                        reviews = reviewRepository.findByItem_IdOrderByRatingAsc(itemId);
+                        break;
+                    case LATEST:
+                    default:
+                        reviews = reviewRepository.findByItem_IdOrderByCreatedAtDesc(itemId);
+                        break;
+                }
 
-            if (reviews.isEmpty()) {
-                throw new IllegalArgumentException("아직 리뷰가 없습니다.");
-            }
+                if (reviews.isEmpty()) {
+                    throw new IllegalArgumentException("아직 리뷰가 없습니다.");
+                }
 
-            return reviews;
-        } catch (DataAccessException e) {
-            throw new IllegalArgumentException("상품별 리뷰 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
+                return reviews;
+            } catch (DataAccessException e) {
+                attempt++;
+                if (attempt >= maxAttempts) {
+                    throw new IllegalArgumentException("상품별 리뷰 조회 중 오류가 발생했습니다. 다시 시도해주세요.", e);
+                }
+            }
         }
+        throw new IllegalArgumentException("상품별 리뷰 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
 
-    // 평균 평점 조회
-    @Retryable(value = DataAccessException.class, maxAttempts = 3)
+    // 평균 평점 조회 (수동 재시도 3번)
     public Double getAverageRating(Long itemId) {
-        try {
-            return reviewRepository.findAverageRatingByItem_Id(itemId);
-        } catch (DataAccessException e) {
-            throw new IllegalArgumentException("평균 평점 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
+        int maxAttempts = 3;
+        int attempt = 0;
+        while (attempt < maxAttempts) {
+            try {
+                return reviewRepository.findAverageRatingByItem_Id(itemId);
+            } catch (DataAccessException e) {
+                attempt++;
+                if (attempt >= maxAttempts) {
+                    throw new IllegalArgumentException("평균 평점 조회 중 오류가 발생했습니다. 다시 시도해주세요.", e);
+                }
+            }
         }
+        throw new IllegalArgumentException("평균 평점 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
 
-    // 전체 리뷰 조회 (관리자용)
-    @Retryable(value = DataAccessException.class, maxAttempts = 3)
+    // 전체 리뷰 조회 (수동 재시도 3번)
     public List<Review> findAllReviews() {
-        try {
-            return reviewRepository.findAll();
-        } catch (DataAccessException e) {
-            throw new IllegalArgumentException("전체 리뷰 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
+        int maxAttempts = 3;
+        int attempt = 0;
+        while (attempt < maxAttempts) {
+            try {
+                return reviewRepository.findAll();
+            } catch (DataAccessException e) {
+                attempt++;
+                if (attempt >= maxAttempts) {
+                    throw new IllegalArgumentException("전체 리뷰 조회 중 오류가 발생했습니다. 다시 시도해주세요.", e);
+                }
+            }
         }
+        throw new IllegalArgumentException("전체 리뷰 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
 }
