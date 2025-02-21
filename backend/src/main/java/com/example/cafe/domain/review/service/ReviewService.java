@@ -1,7 +1,7 @@
 package com.example.cafe.domain.review.service;
 
 import com.example.cafe.domain.item.entity.Item;
-import com.example.cafe.domain.item.respository.ItemRepository;
+import com.example.cafe.domain.item.repository.ItemRepository;
 import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.domain.member.repository.MemberRepository;
 import com.example.cafe.domain.review.entity.Review;
