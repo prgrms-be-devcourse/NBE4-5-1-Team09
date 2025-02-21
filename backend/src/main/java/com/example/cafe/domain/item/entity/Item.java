@@ -2,10 +2,7 @@ package com.example.cafe.domain.item.entity;
 
 import com.example.cafe.domain.trade.domain.entity.CartItem;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
@@ -14,6 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Setter
+@Builder
 public class Item {
 
     @Id
