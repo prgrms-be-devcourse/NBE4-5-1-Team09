@@ -8,7 +8,6 @@ spring:
 
   profiles:
     active: dev
-    include: SECRET-KEY
 
   datasource:
     url: jdbc:h2:./db_dev;MODE=MySQL
@@ -30,6 +29,7 @@ spring:
         use_sql_comments: true
         default_batch_fetch_size: 100
 
+
 logging:
   level:
     org.hibernate.SQL: DEBUG
@@ -49,3 +49,5 @@ custom:
 
 file:
   upload-dir: src/main/resources/static/images
+
+
