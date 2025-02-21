@@ -28,7 +28,7 @@ public class MemberService {
     @Value("${custom.admin.admin-code}")
     private String secretAdminCode;
 
-    // 일반 회원 가입 (이메일 인증 코드 발송 로직 포함)
+    // 일반 회원 가입
     @Transactional
     public Member join(String email, String password, String address) {
         log.info("일반 회원 가입 시도 :{}", email);
@@ -87,7 +87,7 @@ public class MemberService {
         return memberRepository.save(member);
     }
 
-    // 일반 회원 로그인 (이메일 인증 여부 포함)
+    // 일반 회원 로그인
     public Member login(String email, String rawPassword) {
         log.info("일반 회원 로그인 시도: {}", email);
         Member member = memberRepository.findByEmail(email)

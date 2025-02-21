@@ -1,17 +1,16 @@
 server:
   port: 8080
 
+spring:
   output:
     ansi:
       enabled: always
-
   profiles:
     active: dev
-
   config:
-    import: "classpath:application-SECRET-KEY.yml"
-    import: "classpath:application-secret.yml"
-
+    import:
+      - "classpath:application-SECRET-KEY.yml"
+      - "classpath:application-secret.yml"
   datasource:
     url: jdbc:h2:./db_dev;MODE=MySQL
     username: sa
@@ -19,7 +18,6 @@ server:
     driver-class-name: org.h2.Driver
     hikari:
       auto-commit: false
-
   jpa:
     open-in-view: false
     hibernate:
@@ -42,6 +40,7 @@ logging:
 custom:
   jwt:
     expire-seconds: "#{5}"
+    refresh-expire-seconds: 604800
 
 file:
   upload-dir: src/main/resources/static/images

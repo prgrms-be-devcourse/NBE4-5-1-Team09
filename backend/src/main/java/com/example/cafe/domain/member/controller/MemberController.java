@@ -24,7 +24,7 @@ public class MemberController {
     private final MemberService memberService;
     private final AuthTokenService authTokenService;
 
-    // 일반 회원 가입 (이메일 인증 코드 발송 로직은 그대로 유지)
+    // 일반 회원 가입
     @PostMapping("/join")
     public ResponseEntity<?> signUp(@RequestBody @Validated MemberJoinRequestDto request) {
         Member member = memberService.join(request.getEmail(), request.getPassword(), request.getAddress());
@@ -38,7 +38,7 @@ public class MemberController {
         return ResponseEntity.ok("관리자 회원 가입 성공: " + member.getEmail());
     }
 
-    // 일반 회원 로그인 (정상 로그인 메서드 호출 및 리프레시 토큰 HttpOnly 쿠키 설정)
+    // 일반 회원 로그인
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Validated LoginRequestDto request, HttpServletResponse response) {
         // 일반 회원 로그인은 login() 메서드를 호출 (이메일 인증 여부 등 기존 로직 그대로 사용)
@@ -136,7 +136,7 @@ public class MemberController {
         }
 
         String accessToken = authHeader.substring("Bearer ".length());
-        // 액세스 토큰 검증 및 클레임 추출
+
         Map<String, Object> claims = authTokenService.verifyToken(accessToken);
         if (claims == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
