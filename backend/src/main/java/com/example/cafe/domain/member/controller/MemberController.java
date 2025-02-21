@@ -172,6 +172,15 @@ public class MemberController {
         return ResponseEntity.ok(profile);
     }
 
+    // 비밀번호 변경: 액세스 토큰에서 이메일 추출하여 변경
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestHeader("Authorization") String authHeader,
+                                            @RequestBody @Validated ChangePasswordRequestDto dto) {
+        String email = extractEmailFromToken(authHeader);
+        memberService.changePassword(email, dto.getOldPassword(), dto.getNewPassword());
+        return ResponseEntity.ok("비밀번호 변경 성공");
+    }
+
     // 비밀번호 재설정 요청: 비밀번호 재설정을 위해 이메일 전송
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody @Validated PasswordResetRequestDto request) {

@@ -154,6 +154,18 @@ public class MemberService {
         return getProfile(email);
     }
 
+    // 비밀번호 변경
+    @Transactional
+    public void changePassword(String email, String oldPassword, String newPassword) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.MEMBER_NOT_FOUND));
+        if (!passwordEncoder.matches(oldPassword, member.getPassword())) {
+            throw new IllegalArgumentException(ErrorMessages.PASSWORD_MISMATCH);
+        }
+        member.setPassword(passwordEncoder.encode(newPassword));
+        memberRepository.save(member);
+    }
+
 
     // 비밀번호 재설정 이메일 전송 기능
     @Transactional
