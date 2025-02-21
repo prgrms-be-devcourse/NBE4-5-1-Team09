@@ -1,16 +1,16 @@
 server:
   port: 8080
 
-spring:
-  config:
-    import: "classpath:application-secret.yml"
-
   output:
     ansi:
       enabled: always
 
   profiles:
     active: dev
+
+  config:
+    import: "classpath:application-SECRET-KEY.yml"
+    import: "classpath:application-secret.yml"
 
   datasource:
     url: jdbc:h2:./db_dev;MODE=MySQL
@@ -41,6 +41,7 @@ logging:
 
 custom:
   jwt:
-    expire-seconds: 3600
-    refresh-expire-seconds: 604800
+    expire-seconds: "#{5}"
 
+file:
+  upload-dir: src/main/resources/static/images
