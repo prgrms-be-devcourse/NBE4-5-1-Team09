@@ -1,5 +1,7 @@
 package com.example.cafe.domain.member.service;
 
+import com.example.cafe.domain.member.dto.ProfileResponseDto;
+import com.example.cafe.domain.member.dto.ProfileUpdateRequestDto;
 import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.domain.member.repository.MemberRepository;
 import com.example.cafe.global.constant.ErrorMessages;
@@ -21,6 +23,7 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final AuthTokenService authTokenService;
     private final EmailVerificationService emailVerificationService;
+    private final MailService mailService;
 
     @Value("${custom.admin.admin-code}")
     private String secretAdminCode;
@@ -128,5 +131,59 @@ public class MemberService {
         Member member = login(email, rawPassword);
         memberRepository.delete(member);
         log.info("회원 탈퇴 성공: {}", email);
+    }
+
+    // 프로필 조회
+    public ProfileResponseDto getProfile(String email) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.MEMBER_NOT_FOUND));
+        ProfileResponseDto dto = new ProfileResponseDto();
+        dto.setEmail(member.getEmail());
+        dto.setAddress(member.getAddress());
+        dto.setAuthority(member.getAuthority());
+        return dto;
+    }
+
+    // 프로필 수정
+    @Transactional
+    public ProfileResponseDto updateProfile(String email, ProfileUpdateRequestDto dto) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.MEMBER_NOT_FOUND));
+        member.setAddress(dto.getAddress());
+        member = memberRepository.save(member);
+        return getProfile(email);
+    }
+
+
+    // 비밀번호 재설정 이메일 전송 기능
+    @Transactional
+    public void requestPasswordReset(String email) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.MEMBER_NOT_FOUND));
+        //재설정 코드 6자리 숫자 생성
+        String resetCode = String.format("%06d", (int)(Math.random()*1000000));
+        member.setResetPasswordCode(resetCode);
+        memberRepository.save(member);
+        try {
+            mailService.sendPasswordResetEmail(member.getEmail(), resetCode);
+            log.info("비밀번호 재설정 이메일 전송 성공: {}", member.getEmail());
+        } catch (Exception e) {
+            log.error("비밀번호 재설정 이메일 전송 실패: {}", member.getEmail(), e);
+            throw new RuntimeException("비밀번호 재설정 이메일 전송 실패: " + e.getMessage());
+        }
+    }
+
+    // 비밀번호 재설정 기능
+    @Transactional
+    public void resetPassword(String email, String resetCode, String newPassword) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.MEMBER_NOT_FOUND));
+        if (!resetCode.equals(member.getResetPasswordCode())) {
+            throw new IllegalArgumentException(ErrorMessages.RESET_CODE_MISMATCH);
+        }
+        member.setPassword(passwordEncoder.encode(newPassword));
+        member.setResetPasswordCode(null);
+        memberRepository.save(member);
+        log.info("비밀번호 재설정 성공: {}", email);
     }
 }

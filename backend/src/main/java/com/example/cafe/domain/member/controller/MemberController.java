@@ -1,9 +1,6 @@
 package com.example.cafe.domain.member.controller;
 
-import com.example.cafe.domain.member.dto.AdminJoinRequestDto;
-import com.example.cafe.domain.member.dto.EmailVerificationRequestDto;
-import com.example.cafe.domain.member.dto.LoginRequestDto;
-import com.example.cafe.domain.member.dto.MemberJoinRequestDto;
+import com.example.cafe.domain.member.dto.*;
 import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.domain.member.service.AuthTokenService;
 import com.example.cafe.domain.member.service.MemberService;
@@ -156,5 +153,48 @@ public class MemberController {
         // 본인 인증 후 회원 탈퇴 진행
         memberService.deleteMember(request.getEmail(), request.getPassword());
         return ResponseEntity.ok("회원 탈퇴 성공");
+    }
+
+    // 프로필 조회: 액세스 토큰에서 이메일 추출하여 본인 정보 조회
+    @GetMapping("/profile")
+    public ResponseEntity<?> getProfile(@RequestHeader("Authorization") String authHeader) {
+        String email = extractEmailFromToken(authHeader);
+        ProfileResponseDto profile = memberService.getProfile(email);
+        return ResponseEntity.ok(profile);
+    }
+
+    // 프로필 수정: 액세스 토큰에서 이메일 추출하여 본인 정보 수정
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile(@RequestHeader("Authorization") String authHeader,
+                                           @RequestBody @Validated ProfileUpdateRequestDto dto) {
+        String email = extractEmailFromToken(authHeader);
+        ProfileResponseDto profile = memberService.updateProfile(email, dto);
+        return ResponseEntity.ok(profile);
+    }
+
+    // 비밀번호 재설정 요청: 비밀번호 재설정을 위해 이메일 전송
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody @Validated PasswordResetRequestDto request) {
+        memberService.requestPasswordReset(request.getEmail());
+        return ResponseEntity.ok("비밀번호 재설정 이메일을 전송했습니다.");
+    }
+
+    // 비밀번호 재설정 확인: 이메일, 재설정 코드, 새 비밀번호를 받아 비밀번호를 변경
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody @Validated PasswordResetConfirmRequestDto request) {
+        memberService.resetPassword(request.getEmail(), request.getResetCode(), request.getNewPassword());
+        return ResponseEntity.ok("비밀번호 재설정 성공");
+    }
+
+    private String extractEmailFromToken(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new IllegalArgumentException("인증 토큰이 제공되지 않았습니다.");
+        }
+        String token = authHeader.substring("Bearer ".length());
+        Map<String, Object> claims = authTokenService.verifyToken(token);
+        if (claims == null || claims.get("email") == null) {
+            throw new IllegalArgumentException("유효하지 않은 토큰입니다.");
+        }
+        return (String) claims.get("email");
     }
 }
