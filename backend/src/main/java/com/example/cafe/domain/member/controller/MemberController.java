@@ -116,4 +116,14 @@ public class MemberController {
         boolean result = memberService.verifyEmail(request.getEmail(), request.getCode());
         return ResponseEntity.ok(result ? "이메일 인증 성공" : "이메일 인증 실패");
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity logout(HttpServletResponse response) {
+        Cookie cookie = new Cookie("refreshToken", null);
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setMaxAge(0); // 쿠키 삭제
+        response.addCookie(cookie);
+        return ResponseEntity.ok("로그아웃 성공");
+    }
 }
