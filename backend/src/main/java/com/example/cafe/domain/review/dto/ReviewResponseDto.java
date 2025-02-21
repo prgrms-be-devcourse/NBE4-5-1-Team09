@@ -1,6 +1,7 @@
 package com.example.cafe.domain.review.dto;
 
 import com.example.cafe.domain.review.entity.Review;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -10,6 +11,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 public class ReviewResponseDto {
     private Long reviewId;         // 리뷰 ID
     private Long memberId;         // 작성자의 멤버 ID
@@ -22,10 +24,10 @@ public class ReviewResponseDto {
     // fromEntity 메서드 추가
     public static ReviewResponseDto fromEntity(Review review) {
         ReviewResponseDto dto = new ReviewResponseDto();
-        dto.setReviewId(review.getReview_id());
+        dto.setReviewId(review.getId());
         dto.setMemberId(review.getMember().getId());
         dto.setItemId(review.getItem().getId());
-        dto.setReviewContent(review.getReview_content());
+        dto.setReviewContent(review.getReview_content());  // 엔티티의 필드 이름을 맞춤
         dto.setRating(review.getRating());
         dto.setCreatedAt(review.getCreatedAt());
         dto.setModifiedAt(review.getModifiedAt());

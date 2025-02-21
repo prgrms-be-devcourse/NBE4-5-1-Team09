@@ -19,7 +19,7 @@ public class Review {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "review_id")
-    private Long review_id;
+    private Long id;
 
     @ManyToOne
     @JoinColumn(name = "member_id")
@@ -29,18 +29,18 @@ public class Review {
     @JoinColumn(name = "item_id")
     private Item item;
 
-    @Column(name = "review_content")
-    private String review_content;
+    @Column(name = "review_content", nullable = false)
+    private String review_content;  //
 
-    @Column(name = "rating")
+    @Column(name = "rating", nullable = false)
     private double rating;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "modified_at")
+    @Column(name = "modified_at", nullable = false)
     private LocalDateTime modifiedAt;
-    
+
     // 엔티티가 처음 저장될 때 실행
     @PrePersist
     public void prePersist() {
