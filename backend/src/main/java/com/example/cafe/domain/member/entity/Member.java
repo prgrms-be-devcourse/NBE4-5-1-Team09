@@ -42,6 +42,18 @@ public class Member {
     @Column(name = "admin_code")
     private String adminCode;
 
+    // 이메일 인증 코드
+    @Column(name = "verification_code")
+    private String verificationCode;
+
+    // 이메일 인증 확인
+    @Column(name = "verified", nullable = false, columnDefinition = "boolean default false")
+    private boolean verified;
+
+    // 비밀번호 재설정 코드
+    @Column(name = "reset_password_code")
+    private String resetPasswordCode;
+
     @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Cart cart;
 

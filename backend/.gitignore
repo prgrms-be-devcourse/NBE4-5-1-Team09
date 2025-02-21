@@ -40,6 +40,8 @@ out/
 .DS_Store
 
 ### custom ###
+db_dev.mv.db
+application-secret.yml
 
 db_dev.mv.db
 db_dev.trace.db
