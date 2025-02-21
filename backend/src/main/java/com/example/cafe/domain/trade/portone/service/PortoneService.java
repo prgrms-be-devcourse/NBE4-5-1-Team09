@@ -4,6 +4,7 @@ import com.example.cafe.domain.trade.domain.entity.Trade;
 import com.example.cafe.domain.trade.domain.entity.TradeStatus;
 import com.example.cafe.domain.trade.portone.domain.dto.WebHook;
 import com.example.cafe.domain.trade.repository.TradeRepository;
+import com.example.cafe.domain.trade.service.user.UserTradeService;
 import com.siot.IamportRestClient.IamportClient;
 import com.siot.IamportRestClient.exception.IamportResponseException;
 import com.siot.IamportRestClient.request.CancelData;
@@ -20,6 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+
+import static com.example.cafe.domain.trade.domain.entity.TradeStatus.PAY;
+import static com.example.cafe.domain.trade.domain.entity.TradeStatus.REFUSED;
 
 @Slf4j
 @Service
@@ -93,10 +97,12 @@ public class PortoneService {
         }
 
         if (webHook.getStatus().equals("paid")) {
-            findTrade.setTradeStatus(TradeStatus.PAY);
+            findTrade.setTradeStatus(PAY);
             log.info("response.amount:{}", paymentIamportResponse.getResponse().getAmount());
         }
 
-        log.info("web hook 인증 결과 이상 없음.");
+
+        log.info("web hook 인증 결과 이상 없음, TradeId : [{}] 결제 완료.", findTrade.getId());
     }
+
 }
