@@ -2,8 +2,8 @@ package com.example.cafe.domain.trade.service.user;
 
 import com.example.cafe.domain.item.entity.Item;
 import com.example.cafe.domain.item.respository.ItemRepository;
-import com.example.cafe.domain.trade.domain.dto.ItemCartRequestDto;
-import com.example.cafe.domain.trade.domain.dto.ItemCartResponseDto;
+import com.example.cafe.domain.trade.domain.dto.request.ItemCartRequestDto;
+import com.example.cafe.domain.trade.domain.dto.response.ItemCartResponseDto;
 import com.example.cafe.domain.trade.domain.entity.Cart;
 import com.example.cafe.domain.trade.domain.entity.CartItem;
 import com.example.cafe.domain.trade.repository.CartItemRepository;
@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.example.cafe.domain.trade.domain.dto.ItemCartResponseDto.*;
+import static com.example.cafe.domain.trade.domain.dto.response.ItemCartResponseDto.*;
 
 @Service
 @RequiredArgsConstructor

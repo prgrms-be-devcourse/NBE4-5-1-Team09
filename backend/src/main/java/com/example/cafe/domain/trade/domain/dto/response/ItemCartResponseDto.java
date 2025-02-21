@@ -1,4 +1,4 @@
-package com.example.cafe.domain.trade.domain.dto;
+package com.example.cafe.domain.trade.domain.dto.response;
 
 import com.example.cafe.domain.item.entity.ItemStatus;
 import lombok.AllArgsConstructor;

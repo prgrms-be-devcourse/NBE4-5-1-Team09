@@ -49,5 +49,12 @@ public class Item {
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CartItem> cartItems;
 
+    public void autoCheckQuantityForSetStatus() {
+        if (this.getStock() <= 0) {
+            this.itemStatus = ItemStatus.SOLD_OUT;
+        } else {
+            this.itemStatus = ItemStatus.ON_SALE;
+        }
+    }
 
 }
