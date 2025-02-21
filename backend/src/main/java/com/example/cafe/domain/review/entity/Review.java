@@ -30,7 +30,7 @@ public class Review {
     private Item item;
 
     @Column(name = "review_content", nullable = false)
-    private String review_content;
+    private String review_content;  //
 
     @Column(name = "rating", nullable = false)
     private double rating;
@@ -40,7 +40,7 @@ public class Review {
 
     @Column(name = "modified_at", nullable = false)
     private LocalDateTime modifiedAt;
-    
+
     // 엔티티가 처음 저장될 때 실행
     @PrePersist
     public void prePersist() {
