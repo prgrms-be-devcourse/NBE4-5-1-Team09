@@ -99,17 +99,25 @@ public class ReviewControllerTest {
 
     @Test
     public void testGetReviewsByItem() throws Exception {
+        Long itemId = 1L;
+        Long memberId = 123L;  // 테스트할 memberId
+
+        // 테스트 리뷰 데이터
         Review review1 = new Review(1L, testMember, testItem, "Good product!", 4.0, LocalDateTime.now(), LocalDateTime.now());
         Review review2 = new Review(2L, testMember, testItem, "Not bad", 3.0, LocalDateTime.now(), LocalDateTime.now());
 
         List<Review> reviews = List.of(review1, review2);
-        when(reviewService.getReviewsByItem(1L, ReviewSortType.LATEST)).thenReturn(reviews);
 
-        mockMvc.perform(get("/reviews/item/1?sortType=LATEST"))
+        // 서비스 메서드 호출 시 memberId를 포함하도록 수정
+        when(reviewService.getReviewsByItem(itemId, memberId, ReviewSortType.LATEST)).thenReturn(reviews);
+
+        // mockMvc 요청 시 memberId 파라미터 추가
+        mockMvc.perform(get("/reviews/item/1?sortType=LATEST&memberId=" + memberId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].reviewContent").value("Good product!"))
                 .andExpect(jsonPath("$[1].reviewContent").value("Not bad"));
     }
+
 
     @Test
     public void testGetAverageRating() throws Exception {
