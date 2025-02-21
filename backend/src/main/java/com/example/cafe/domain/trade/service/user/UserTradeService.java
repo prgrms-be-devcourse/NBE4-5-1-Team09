@@ -82,6 +82,8 @@ public class UserTradeService {
             trade.addTradeItem(tradeItem);
         }
 
+        trade.setTotalPrice(calculateTotalPrice(trade.getTradeItems()));
+
         String tradeUUID = generateTradeUUID();
         trade.setTradeUUID(tradeUUID);
 
