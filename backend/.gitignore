@@ -40,4 +40,5 @@ out/
 .DS_Store
 
 ### custom ###
+application-SECRET-KEY.yml
 
