@@ -6,6 +6,7 @@ import com.example.cafe.domain.trade.domain.dto.request.ItemCartRequestDto;
 import com.example.cafe.domain.trade.domain.dto.response.ItemCartResponseDto;
 import com.example.cafe.domain.trade.domain.entity.Cart;
 import com.example.cafe.domain.trade.domain.entity.CartItem;
+import com.example.cafe.domain.trade.domain.dto.ItemAddCartDto;
 import com.example.cafe.domain.trade.repository.CartItemRepository;
 import com.example.cafe.domain.trade.repository.CartRepository;
 import com.example.cafe.domain.trade.repository.TradeItemRepository;

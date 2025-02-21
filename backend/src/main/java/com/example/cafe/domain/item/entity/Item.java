@@ -54,5 +54,4 @@ public class Item {
             this.itemStatus = ItemStatus.ON_SALE;
         }
     }
-
 }

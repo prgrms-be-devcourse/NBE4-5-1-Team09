@@ -10,6 +10,7 @@ public enum TradeStatus {
     POST_DELIVERY("배송완료"), // (배송 완료)
     REFUSED("주문취소"),
     REFUND("환불 완료"); // (주문 취소) → 어떤 상태에서든 취소 되면, REFUSED 로 통일.
+    REFUSED("주문취소"); // (주문 취소) → 어떤 상태에서든 취소 되면, REFUSED 로 통일.
 
     private final String status;
 
