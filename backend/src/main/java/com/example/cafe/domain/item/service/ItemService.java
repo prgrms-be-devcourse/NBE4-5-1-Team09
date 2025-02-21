@@ -4,7 +4,8 @@ import com.example.cafe.domain.item.dto.ItemRequestDto;
 import com.example.cafe.domain.item.dto.ItemResponseDto;
 import com.example.cafe.domain.item.entity.Item;
 import com.example.cafe.domain.item.entity.ItemStatus;
-import com.example.cafe.domain.item.respository.ItemRepository;
+import com.example.cafe.domain.item.repository.ItemRepository;
+import com.example.cafe.global.exception.ItemNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,11 @@ import java.util.UUID;
 public class ItemService {
 
     private final ItemRepository itemRepository;
+    private String uploadDir = "src/main/resources/static/images";
+
+    public void setImageDirectory(String directory) {
+        this.uploadDir = directory;
+    }
 
     public List<ItemResponseDto> getAllItems() {
         return itemRepository.findAll().stream().map(ItemResponseDto::new).toList();
@@ -31,10 +37,9 @@ public class ItemService {
 
     public ItemResponseDto getItem(Long id) {
 
-        Item item = itemRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("상품이 존재하지 않습니다. id: " + id));
-
-        return new ItemResponseDto(item);
+        return itemRepository.findById(id)
+                .map(ItemResponseDto::new)
+                .orElseThrow(() -> new ItemNotFoundException(id));
     }
 
     @Transactional
@@ -63,15 +68,27 @@ public class ItemService {
     }
 
     @Transactional
-    public ItemResponseDto updateItem(Long id, ItemRequestDto itemRequestDto) {
+    public ItemResponseDto updateItem(Long id, ItemRequestDto itemRequestDto, MultipartFile imageFile) throws IOException {
 
         Item item = itemRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("상품이 존재하지 않습니다. id: " + id));
+                .orElseThrow(() -> new ItemNotFoundException(id));
+
+        // 새로운 이미지가 있으면 기존 이미지 삭제 후 저장
+        if (imageFile != null && !imageFile.isEmpty()) {
+            String oldImagePath = item.getImagePath();  // 기존 이미지 경로 저장
+            String newImagePath = saveImage(imageFile); // 새 이미지 저장
+            item.setImagePath(newImagePath);
+
+            // 기존 이미지 삭제
+            if (oldImagePath != null) {
+                Path oldImageFile = Paths.get(oldImagePath);
+                Files.deleteIfExists(oldImageFile);
+            }
+        }
 
         item.setItemName(itemRequestDto.getItemName());
         item.setPrice(itemRequestDto.getPrice());
         item.setStock(itemRequestDto.getStock());
-        item.setImagePath(itemRequestDto.getImagePath());
         item.setContent(itemRequestDto.getContent());
         item.setCategory(itemRequestDto.getCategory());
 
@@ -88,8 +105,6 @@ public class ItemService {
 
     private String saveImage(MultipartFile imageFile) throws IOException {
 
-        // 저장할 디렉토리 경로 설정
-        String uploadDir = "src/main/resources/static/images";  // 적절한 디렉토리 경로로 수정
         Path uploadPath = Paths.get(uploadDir);
 
         // 디렉토리가 없으면 생성
@@ -110,7 +125,7 @@ public class ItemService {
         // 파일 복사
         Files.copy(imageFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-        // 저장된 파일의 경로 반환 (새로운 파일 이름)
+        // 저장된 파일의 경로 반환
         return filePath.toString();
     }
 }
