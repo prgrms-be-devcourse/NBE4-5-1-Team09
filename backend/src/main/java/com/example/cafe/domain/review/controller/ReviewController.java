@@ -57,14 +57,17 @@ public class ReviewController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "상품별 리뷰 조회", description = "특정 상품에 대한 리뷰 목록을 조회합니다.")
-    @GetMapping("/item/{itemId}")
+    @Operation(summary = "상품별 리뷰 조회", description = "특정 상품에 대한 리뷰 목록을 조회합니다. 내 리뷰는 제외됩니다.")
+    @GetMapping("/item/{itemId}/{memberId}")
     public ResponseEntity<List<ReviewResponseDto>> getReviewsByItem(
             @Parameter(description = "상품 ID", example = "1") @PathVariable Long itemId,
-            @Parameter(description = "정렬 기준 (LATEST, OLDEST)", example = "LATEST") @RequestParam(defaultValue = "LATEST") ReviewSortType sortType) {
+            @Parameter(description = "회원 ID", example = "123") @PathVariable Long memberId,
+            @Parameter(description = "정렬 기준 (LATEST, HIGHEST_RATING, LOWEST_RATING)", example = "LATEST") @RequestParam(defaultValue = "LATEST") ReviewSortType sortType) {
 
-        List<Review> reviews = reviewService.getReviewsByItem(itemId, sortType);
+        // 서비스 호출 시 memberId를 전달하여 내 리뷰를 제외한 리뷰를 조회
+        List<Review> reviews = reviewService.getReviewsByItem(itemId, memberId, sortType);
 
+        // 리뷰를 ResponseDto로 변환하여 응답
         List<ReviewResponseDto> responseDtos = reviews.stream()
                 .map(ReviewResponseDto::fromEntity)
                 .collect(Collectors.toList());
@@ -86,6 +89,20 @@ public class ReviewController {
         List<ReviewResponseDto> responseDtos = reviews.stream()
                 .map(ReviewResponseDto::fromEntity)
                 .collect(Collectors.toList());
+        return ResponseEntity.ok(responseDtos);
+    }
+
+    @Operation(summary = "내가 작성한 특정 상품 리뷰 조회", description = "현재 로그인한 사용자가 특정 상품에 남긴 리뷰를 조회합니다.")
+    @GetMapping("/my/item/{itemId}/{memberId}")
+    public ResponseEntity<List<ReviewResponseDto>> getMyReviewsByItem(
+            @Parameter(description = "상품 ID", example = "1") @PathVariable Long itemId,
+            @Parameter(description = "회원 ID", example = "123") @PathVariable Long memberId) {
+
+        List<Review> reviews = reviewService.getReviewsByItemAndMember(itemId, memberId);
+        List<ReviewResponseDto> responseDtos = reviews.stream()
+                .map(ReviewResponseDto::fromEntity)
+                .collect(Collectors.toList());
+
         return ResponseEntity.ok(responseDtos);
     }
 }
