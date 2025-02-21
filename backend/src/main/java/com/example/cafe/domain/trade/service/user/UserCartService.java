@@ -54,7 +54,7 @@ public class UserCartService {
 
 
 
-    public ItemCartResponseDto QuantityItemToCart(ItemCartRequestDto editItem) {
+    public ItemCartResponseDto editItemToCart(ItemCartRequestDto editItem) {
         Cart cart = getCart(editItem);
 
         Item item = itemRepository.findById(editItem.getItemId()).orElseThrow(() -> new RuntimeException("해당 아이템을 찾을 수 없어 카트에 추가하지 못하였습니다."));
