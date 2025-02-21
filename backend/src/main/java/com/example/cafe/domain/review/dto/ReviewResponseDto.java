@@ -22,7 +22,7 @@ public class ReviewResponseDto {
     // fromEntity 메서드 추가
     public static ReviewResponseDto fromEntity(Review review) {
         ReviewResponseDto dto = new ReviewResponseDto();
-        dto.setReviewId(review.getReview_id());
+        dto.setReviewId(review.getId());
         dto.setMemberId(review.getMember().getId());
         dto.setItemId(review.getItem().getId());
         dto.setReviewContent(review.getReview_content());
