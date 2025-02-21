@@ -1,9 +1,8 @@
 package com.example.cafe.domain.trade.service.user;
 
-
 import com.example.cafe.domain.item.entity.Item;
 import com.example.cafe.domain.item.entity.ItemStatus;
-import com.example.cafe.domain.item.respository.ItemRepository;
+import com.example.cafe.domain.item.repository.ItemRepository;
 import com.example.cafe.domain.trade.domain.dto.request.OrderRequestItemDto;
 import com.example.cafe.domain.trade.domain.dto.request.OrderRequestItemsDto;
 import com.example.cafe.domain.trade.domain.dto.response.OrderResponseDto;
