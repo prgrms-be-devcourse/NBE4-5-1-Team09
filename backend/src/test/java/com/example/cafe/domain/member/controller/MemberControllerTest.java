@@ -18,6 +18,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,8 +28,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -39,6 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 JpaRepositoriesAutoConfiguration.class
         }
 )
+@ActiveProfiles("test")
 @ContextConfiguration(classes = {MemberController.class, MemberControllerTest.TestConfig.class})
 @AutoConfigureMockMvc(addFilters = false)
 public class MemberControllerTest {
@@ -220,5 +226,46 @@ public class MemberControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value("newDummyToken"));
     }
+
+    @Test
+    @DisplayName("로그아웃 정상 동작 확인")
+    public void t10() throws Exception {
+        mvc.perform(post("/api/member/logout"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("로그아웃 성공")))
+                .andExpect(result -> {
+                    // 응답 헤더의 Set-Cookie에 refreshToken 쿠키가 삭제된 형태가 포함되어 있는지 확인
+                    String setCookie = result.getResponse().getHeader("Set-Cookie");
+                    assertNotNull(setCookie);
+                    assertTrue(setCookie.contains("refreshToken="));
+                    assertTrue(setCookie.contains("Max-Age=0"));
+                });
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴 정상 동작 확인 (로그인 상태)")
+    public void t11() throws Exception {
+        // 탈퇴 요청에 사용할 이메일과 비밀번호
+        LoginRequestDto request = new LoginRequestDto();
+        request.setEmail("test@test.com");
+        request.setPassword("testPassword");
+
+        // 액세스 토큰 검증을 위한 클레임 설정 (토큰에 담긴 이메일)
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("email", "test@test.com");
+        // "validAccessToken"이라는 액세스 토큰이 유효하다고 가정하고 클레임 반환하도록 목킹
+        when(authTokenService.verifyToken("validAccessToken")).thenReturn(claims);
+
+        // memberService.deleteMember(email, password)가 호출될 때 아무런 예외 없이 진행되도록 목킹
+        doNothing().when(memberService).deleteMember(anyString(), anyString());
+
+        mvc.perform(delete("/api/member/delete")
+                        .header("Authorization", "Bearer validAccessToken")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("회원 탈퇴 성공")));
+    }
+
 
 }

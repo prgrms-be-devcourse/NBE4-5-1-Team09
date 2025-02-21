@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
@@ -19,6 +20,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("test")
 public class MemberServiceTest {
     @InjectMocks
     private MemberService memberService;
@@ -324,4 +326,66 @@ public class MemberServiceTest {
         });
         assertEquals("Encoding error", ex.getMessage());
     }
+
+    @Test
+    @DisplayName("회원 탈퇴 - 정상 동작 테스트")
+    public void t14() {
+        String email = "test@test.com";
+        String password = "testtest";
+        String encodedPassword = "encodedPassword";
+
+        Member member = Member.builder()
+                .email(email)
+                .password(encodedPassword)
+                .verified(true)
+                .authority("USER")
+                .build();
+        when(memberRepository.findByEmail(email)).thenReturn(Optional.of(member));
+        when(passwordEncoder.matches(password, encodedPassword)).thenReturn(true);
+
+        // deleteMember 내부에서는 login()을 재사용하므로 repository.delete()가 호출되어야 함
+        doNothing().when(memberRepository).delete(member);
+
+        // 회원 탈퇴 호출
+        memberService.deleteMember(email, password);
+
+        // repository.delete()가 정확히 한 번 호출되었는지 검증
+        verify(memberRepository, times(1)).delete(member);
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴 - 존재하지 않는 회원 실패 테스트")
+    public void t15() {
+        String email = "test@test.com";
+        String password = "testtest";
+        when(memberRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
+            memberService.deleteMember(email, password);
+        });
+        assertEquals(ErrorMessages.MEMBER_NOT_FOUND, ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴 - 비밀번호 불일치 실패 테스트")
+    public void t16() {
+        String email = "test@test.com";
+        String password = "testtest";
+        String encodedPassword = "encodedPassword";
+
+        Member member = Member.builder()
+                .email(email)
+                .password(encodedPassword)
+                .verified(true)
+                .authority("USER")
+                .build();
+        when(memberRepository.findByEmail(email)).thenReturn(Optional.of(member));
+        when(passwordEncoder.matches(password, encodedPassword)).thenReturn(false);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
+            memberService.deleteMember(email, password);
+        });
+        assertEquals(ErrorMessages.PASSWORD_MISMATCH, ex.getMessage());
+    }
+
 }
