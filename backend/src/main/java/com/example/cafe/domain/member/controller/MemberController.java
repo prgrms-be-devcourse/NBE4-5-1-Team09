@@ -4,6 +4,7 @@ import com.example.cafe.domain.member.dto.*;
 import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.domain.member.service.AuthTokenService;
 import com.example.cafe.domain.member.service.MemberService;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -130,7 +131,8 @@ public class MemberController {
     @DeleteMapping("/delete")
     public ResponseEntity<?> deleteMember(
             @RequestBody @Validated LoginRequestDto request,
-            @RequestHeader("Authorization") String authHeader) {
+            @Parameter(hidden = true)
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -155,7 +157,9 @@ public class MemberController {
 
     @Operation(summary = "프로필 조회", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/profile")
-    public ResponseEntity<?> getProfile(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<?> getProfile(
+            @Parameter(hidden = true)
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         String email = extractEmailFromToken(authHeader);
         ProfileResponseDto profile = memberService.getProfile(email);
         return ResponseEntity.ok(profile);
@@ -163,8 +167,10 @@ public class MemberController {
 
     @Operation(summary = "프로필 수정", security = @SecurityRequirement(name = "bearerAuth"))
     @PutMapping("/profile")
-    public ResponseEntity<?> updateProfile(@RequestHeader("Authorization") String authHeader,
-                                           @RequestBody @Validated ProfileUpdateRequestDto dto) {
+    public ResponseEntity<?> updateProfile(
+            @Parameter(hidden = true)
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody @Validated ProfileUpdateRequestDto dto) {
         String email = extractEmailFromToken(authHeader);
         ProfileResponseDto profile = memberService.updateProfile(email, dto);
         return ResponseEntity.ok(profile);
@@ -172,8 +178,10 @@ public class MemberController {
 
     @Operation(summary = "비밀번호 변경", security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping("/change-password")
-    public ResponseEntity<?> changePassword(@RequestHeader("Authorization") String authHeader,
-                                            @RequestBody @Validated ChangePasswordRequestDto dto) {
+    public ResponseEntity<?> changePassword(
+            @Parameter(hidden = true)
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody @Validated ChangePasswordRequestDto dto) {
         String email = extractEmailFromToken(authHeader);
         memberService.changePassword(email, dto.getOldPassword(), dto.getNewPassword());
         return ResponseEntity.ok("비밀번호 변경 성공");
