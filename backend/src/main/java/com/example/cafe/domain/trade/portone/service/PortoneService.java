@@ -76,7 +76,6 @@ public class PortoneService {
         }
     }
 
-    @Transactional
     public void validateWebHook(WebHook webHook) {
         IamportResponse<Payment> paymentIamportResponse;
 
@@ -100,7 +99,6 @@ public class PortoneService {
             findTrade.setTradeStatus(PAY);
             log.info("response.amount:{}", paymentIamportResponse.getResponse().getAmount());
         }
-
 
         log.info("web hook 인증 결과 이상 없음, TradeId : [{}] 결제 완료.", findTrade.getId());
     }
