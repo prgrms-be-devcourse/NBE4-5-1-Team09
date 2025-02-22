@@ -64,9 +64,12 @@ public class UserTradeService {
         }
 
         Trade trade = Trade.builder()
+                .member(member)
                 .tradeStatus(BUY) // 거래 상태 초기화
                 .tradeItems(new ArrayList<>()) // 리스트 초기화
                 .build();
+
+        member.getTrades().add(trade);
 
         for (CartItem cartItem : cartItems) {
             Item item = itemRepository.findById(cartItem.getItem().getId()).orElseThrow(() -> new RuntimeException("주문하고자 하는 상품을 찾을 수 없습니다."));
@@ -112,16 +115,17 @@ public class UserTradeService {
     }
 
     public OrderResponseDto tradeWithItemInfo(OrderRequestItemDto requestItemDto) {
+        Member member = memberRepository.findById(requestItemDto.getMemberId()).orElseThrow(() -> new RuntimeException("멤버를 찾을 수 없습니다"));
         if (!stockValidCheck(requestItemDto)) {
             throw new RuntimeException("요청한 상품 중 재고가 부족한 상품이 있습니다.");
         }
 
         Trade trade = Trade.builder()
+                .member(member)
                 .tradeStatus(TradeStatus.BUY)
                 .tradeItems(new ArrayList<>())
                 .build();
 
-        Member member = memberRepository.findById(requestItemDto.getMemberId()).orElseThrow(() -> new RuntimeException("해당 사용자를 찾을 수 없습니다."));
         member.getTrades().add(trade);
 
         Item item = itemRepository.findById(requestItemDto.getItemId()).orElseThrow(() -> new RuntimeException("주문 하고자 하는 상품을 찾을 수 없습니다."));
