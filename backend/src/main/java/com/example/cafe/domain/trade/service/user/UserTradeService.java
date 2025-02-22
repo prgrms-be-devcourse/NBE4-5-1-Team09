@@ -68,7 +68,7 @@ public class UserTradeService {
 
         //trade 에 장바구니에 있는 상품 전체 추가
         for (CartItem cartItem : cartItems) {
-            Item item = itemRepository.findById(cartItem.getItem().getId()).orElseThrow(() -> new RuntimeException("주문하고자 하는 상품을 찾을 수 없습니다."));
+             Item item = itemRepository.findById(cartItem.getItem().getId()).orElseThrow(() -> new RuntimeException("주문하고자 하는 상품을 찾을 수 없습니다."));
 
             item.setStock(item.getStock() - cartItem.getQuantity());
             item.autoCheckQuantityForSetStatus();
@@ -125,7 +125,10 @@ public class UserTradeService {
         // member 에 trade 저장
         member.getTrades().add(trade);
 
-        Item item = itemRepository.findById(requestItemDto.getItemId()).orElseThrow(() -> new RuntimeException("주문 하고자 하는 상품을 찾을 수 없습니다."));
+        // 변경된 코드
+        Item item = itemRepository.findByIdForUpdate(requestItemDto.getItemId())
+                .orElseThrow(() -> new RuntimeException("주문 하고자 하는 상품을 찾을 수 없습니다."));
+
         item.setStock(item.getStock() - requestItemDto.getQuantity());
         item.autoCheckQuantityForSetStatus();
 
@@ -237,7 +240,10 @@ public class UserTradeService {
 
 
     private boolean stockValidCheck(OrderRequestItemDto requestDto) {
-        Item item = itemRepository.findById(requestDto.getItemId()).orElseThrow(() -> new RuntimeException("해당 상품을 찾을 수 없습니다."));
+        //동시성 이슈 해결 - Pessimistic Lock
+        Item item = itemRepository.findByIdForUpdate(requestDto.getItemId())
+                .orElseThrow(() -> new RuntimeException("주문 하고자 하는 상품을 찾을 수 없습니다."));
+
         int reqQuantity = requestDto.getQuantity();
         int itemStock = item.getStock();
 
