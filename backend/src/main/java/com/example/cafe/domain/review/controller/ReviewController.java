@@ -8,6 +8,7 @@ import com.example.cafe.domain.review.service.ReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -74,6 +75,7 @@ public class ReviewController {
     }
 
     // 관리자용 전체 리뷰 조회
+    @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping("/all")
     public ResponseEntity<List<ReviewResponseDto>> getAllReviews() {
         List<Review> reviews = reviewService.findAllReviews(); // Review 엔티티 리스트 반환
