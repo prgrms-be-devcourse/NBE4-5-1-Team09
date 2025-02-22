@@ -10,17 +10,13 @@ import com.example.cafe.domain.trade.domain.dto.response.CartListResponseDto;
 import com.example.cafe.domain.trade.domain.dto.response.ItemCartResponseDto;
 import com.example.cafe.domain.trade.domain.entity.Cart;
 import com.example.cafe.domain.trade.domain.entity.CartItem;
-import com.example.cafe.domain.trade.repository.CartItemRepository;
 import com.example.cafe.domain.trade.repository.CartRepository;
-import com.example.cafe.domain.trade.repository.TradeItemRepository;
-import com.example.cafe.domain.trade.repository.TradeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.example.cafe.domain.trade.domain.dto.response.CartListResponseDto.*;
@@ -30,10 +26,7 @@ import static com.example.cafe.domain.trade.domain.dto.response.ItemCartResponse
 @RequiredArgsConstructor
 @Transactional
 public class UserCartService {
-    private final TradeRepository tradeRepository;
-    private final TradeItemRepository tradeItemRepository;
     private final CartRepository cartRepository;
-    private final CartItemRepository cartItemRepository;
     private final ItemRepository itemRepository;
     private final MemberRepository memberRepository;
 
