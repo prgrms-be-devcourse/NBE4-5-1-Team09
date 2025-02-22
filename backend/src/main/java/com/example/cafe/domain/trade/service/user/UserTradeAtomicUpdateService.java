@@ -12,9 +12,6 @@ import com.example.cafe.domain.trade.domain.entity.Trade;
 import com.example.cafe.domain.trade.domain.entity.TradeItem;
 import com.example.cafe.domain.trade.domain.entity.TradeStatus;
 import com.example.cafe.domain.trade.portone.service.PortoneService;
-import com.example.cafe.domain.trade.repository.CartItemRepository;
-import com.example.cafe.domain.trade.repository.CartRepository;
-import com.example.cafe.domain.trade.repository.TradeItemRepository;
 import com.example.cafe.domain.trade.repository.TradeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,9 +33,6 @@ import static com.example.cafe.domain.trade.domain.entity.TradeStatus.*;
 public class UserTradeService {
 
     private final TradeRepository tradeRepository;
-    private final TradeItemRepository tradeItemRepository;
-    private final CartRepository cartRepository;
-    private final CartItemRepository cartItemRepository;
     private final ItemRepository itemRepository;
     private final PortoneService portoneService;
     private final MemberRepository memberRepository;
@@ -51,10 +45,14 @@ public class UserTradeService {
 
     public OrderResponseDto tradeWithCart(Long memberId) {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new RuntimeException("멤버를 찾을 수 없습니다"));
-        List<CartItem> cartItems = member.getCart().getCartItems();
-
+        List<CartItem> cartItems;
+        try {
+            cartItems = member.getCart().getCartItems();
+        } catch (NullPointerException e) {
+            throw new RuntimeException("장바구니 카트가 비어있습니다.");
+        }
         if (cartItems.isEmpty()) {
-            throw new RuntimeException("장바구니 카드가 비어있습니다.");
+            throw new RuntimeException("장바구니 카트가 비어있습니다.");
         }
 
         for (CartItem cartItem : cartItems) {
@@ -63,14 +61,12 @@ public class UserTradeService {
             }
         }
 
-        Trade trade = Trade.builder()
-                .member(member)
-                .tradeStatus(BUY) // 거래 상태 초기화
-                .tradeItems(new ArrayList<>()) // 리스트 초기화
-                .build();
+        Trade trade = makeTrade(member, BUY);
 
+        //member 에 trade 추가
         member.getTrades().add(trade);
 
+        //trade 에 장바구니에 있는 상품 전체 추가
         for (CartItem cartItem : cartItems) {
              Item item = itemRepository.findById(cartItem.getItem().getId()).orElseThrow(() -> new RuntimeException("주문하고자 하는 상품을 찾을 수 없습니다."));
 
@@ -88,11 +84,14 @@ public class UserTradeService {
             trade.addTradeItem(tradeItem);
         }
 
+        //trade 에 주문 상품 총 합 가격 설정
         trade.setTotalPrice(calculateTotalPrice(trade.getTradeItems()));
 
+        //trade 에 uuid 값 생성 후 추가
         String tradeUUID = generateTradeUUID();
         trade.setTradeUUID(tradeUUID);
 
+        //portone PG 사에 결제 요청 정보 저장
         try {
             portoneService.prePurchase(tradeUUID,new BigDecimal(trade.getTotalPrice()));
         } catch (Exception e) {
@@ -120,12 +119,10 @@ public class UserTradeService {
             throw new RuntimeException("요청한 상품 중 재고가 부족한 상품이 있습니다.");
         }
 
-        Trade trade = Trade.builder()
-                .member(member)
-                .tradeStatus(TradeStatus.BUY)
-                .tradeItems(new ArrayList<>())
-                .build();
+        // Trade 생성
+        Trade trade = makeTrade(member, TradeStatus.BUY);
 
+        // member 에 trade 저장
         member.getTrades().add(trade);
 
         // 변경된 코드
@@ -167,6 +164,7 @@ public class UserTradeService {
     }
 
     // 포트원 PG 사 대신하여 결제 되었다고 처리할 수 있는 메서드
+
     public void processPayment(String uuid, int payAmount) {
 
         //Trade 조회
@@ -193,13 +191,23 @@ public class UserTradeService {
 
         trade.setTradeStatus(PAY);
     }
-
     public void rollBackProductQuantity(Trade trade) {
         List<TradeItem> tradeItems = trade.getTradeItems();
         tradeItems.forEach(tradeItem -> {
             tradeItem.getItem().setStock(tradeItem.getItem().getStock() + tradeItem.getQuantity());
             tradeItem.getItem().autoCheckQuantityForSetStatus();
         });
+    }
+
+    private Trade makeTrade(Member member, TradeStatus buy) {
+        Trade trade = Trade.builder()
+                .member(member)
+                .tradeStatus(buy)
+                .tradeItems(new ArrayList<>())
+                .address(member.getAddress())
+                .email(member.getEmail())
+                .build();
+        return trade;
     }
 
 
