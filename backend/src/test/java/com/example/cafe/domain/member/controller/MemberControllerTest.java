@@ -84,7 +84,7 @@ public class MemberControllerTest {
         Member member = Member.builder().email("test@test.com").build();
         when(memberService.join(anyString(), anyString(), anyString())).thenReturn(member);
 
-        mvc.perform(post("/api/member/join")
+        mvc.perform(post("/member/join")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -99,7 +99,7 @@ public class MemberControllerTest {
         request.setPassword("");
         request.setAddress("");
 
-        mvc.perform(post("/api/member/join")
+        mvc.perform(post("/member/join")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -120,7 +120,7 @@ public class MemberControllerTest {
         when(authTokenService.genAccessToken(member)).thenReturn("dummytoken");
         when(authTokenService.genRefreshToken(member)).thenReturn("dummyrefresh");
 
-        mvc.perform(post("/api/member/login")
+        mvc.perform(post("/member/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -140,7 +140,7 @@ public class MemberControllerTest {
         Member adminMember = Member.builder().email("admin@test.com").build();
         when(memberService.joinAdmin(anyString(), anyString(), anyString(), anyString())).thenReturn(adminMember);
 
-        mvc.perform(post("/api/member/join/admin")
+        mvc.perform(post("/member/join/admin")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -156,7 +156,7 @@ public class MemberControllerTest {
         request.setAddress("");
         request.setAdminCode("");
 
-        mvc.perform(post("/api/member/join/admin")
+        mvc.perform(post("/member/join/admin")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -175,7 +175,7 @@ public class MemberControllerTest {
         when(authTokenService.genAccessToken(adminMember)).thenReturn("adminToken");
         when(authTokenService.genRefreshToken(adminMember)).thenReturn("adminRefresh");
 
-        mvc.perform(post("/api/member/login/admin")
+        mvc.perform(post("/member/login/admin")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -192,7 +192,7 @@ public class MemberControllerTest {
 
         when(memberService.verifyEmail(anyString(), anyString())).thenReturn(true);
 
-        mvc.perform(post("/api/member/verify-email")
+        mvc.perform(post("/member/verify-email")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -208,7 +208,7 @@ public class MemberControllerTest {
 
         when(memberService.verifyEmail(anyString(), anyString())).thenReturn(false);
 
-        mvc.perform(post("/api/member/verify-email")
+        mvc.perform(post("/member/verify-email")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -229,7 +229,7 @@ public class MemberControllerTest {
         when(memberService.findByEmail("test@test.com")).thenReturn(member);
         when(authTokenService.genAccessToken(member)).thenReturn("newDummyToken");
 
-        mvc.perform(post("/api/member/refresh")
+        mvc.perform(post("/member/refresh")
                         .cookie(new Cookie("refreshToken", refreshToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value("newDummyToken"));
@@ -238,7 +238,7 @@ public class MemberControllerTest {
     @Test
     @DisplayName("로그아웃 정상 동작 확인")
     public void t10() throws Exception {
-        mvc.perform(post("/api/member/logout"))
+        mvc.perform(post("/member/logout"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("로그아웃 성공")))
                 .andExpect(result -> {
@@ -267,7 +267,7 @@ public class MemberControllerTest {
         // memberService.deleteMember(email, password)가 호출될 때 아무런 예외 없이 진행되도록 목킹
         doNothing().when(memberService).deleteMember(anyString(), anyString());
 
-        mvc.perform(delete("/api/member/delete")
+        mvc.perform(delete("/member/delete")
                         .header("Authorization", "Bearer validAccessToken")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -286,7 +286,7 @@ public class MemberControllerTest {
         when(authTokenService.verifyToken(anyString())).thenReturn(createClaims(testEmail));
         when(memberService.getProfile(testEmail)).thenReturn(profile);
 
-        mvc.perform(MockMvcRequestBuilders.get("/api/member/profile")
+        mvc.perform(MockMvcRequestBuilders.get("/member/profile")
                         .header("Authorization", "Bearer " + sampleAccessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(testEmail))
@@ -309,7 +309,7 @@ public class MemberControllerTest {
         when(memberService.updateProfile(eq(testEmail), any(ProfileUpdateRequestDto.class)))
                 .thenReturn(updatedProfile);
 
-        mvc.perform(MockMvcRequestBuilders.put("/api/member/profile")
+        mvc.perform(MockMvcRequestBuilders.put("/member/profile")
                         .header("Authorization", "Bearer " + sampleAccessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
@@ -327,7 +327,7 @@ public class MemberControllerTest {
         when(authTokenService.verifyToken(anyString())).thenReturn(createClaims(testEmail));
         // 서비스 메서드가 정상 동작한다고 가정하므로 예외가 발생하지 않음
 
-        mvc.perform(MockMvcRequestBuilders.post("/api/member/change-password")
+        mvc.perform(MockMvcRequestBuilders.post("/member/change-password")
                         .header("Authorization", "Bearer " + sampleAccessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(changeDto)))
@@ -342,7 +342,7 @@ public class MemberControllerTest {
         resetReq.setEmail(testEmail);
 
         // 서비스 호출 시 예외가 발생하지 않는다고 가정
-        mvc.perform(MockMvcRequestBuilders.post("/api/member/forgot-password")
+        mvc.perform(MockMvcRequestBuilders.post("/member/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(resetReq)))
                 .andExpect(status().isOk())
@@ -358,7 +358,7 @@ public class MemberControllerTest {
         confirmDto.setNewPassword("newPassword");
 
         // 서비스 메서드가 정상적으로 작동하여 예외가 발생하지 않는다고 가정
-        mvc.perform(MockMvcRequestBuilders.post("/api/member/reset-password")
+        mvc.perform(MockMvcRequestBuilders.post("/member/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(confirmDto)))
                 .andExpect(status().isOk())
