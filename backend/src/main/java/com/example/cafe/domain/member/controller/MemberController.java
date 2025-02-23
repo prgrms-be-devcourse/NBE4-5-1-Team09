@@ -52,6 +52,7 @@ public class MemberController {
 
         Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
         refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(true);
         refreshCookie.setPath("/");
         refreshCookie.setMaxAge(604800); // 7일
         response.addCookie(refreshCookie);
@@ -71,6 +72,7 @@ public class MemberController {
 
         Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
         refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(true);
         refreshCookie.setPath("/");
         refreshCookie.setMaxAge(604800); // 7일
         response.addCookie(refreshCookie);
@@ -120,8 +122,9 @@ public class MemberController {
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletResponse response) {
         Cookie cookie = new Cookie("refreshToken", null);
-        cookie.setPath("/");
         cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setPath("/");
         cookie.setMaxAge(0); // 쿠키 삭제
         response.addCookie(cookie);
         return ResponseEntity.ok("로그아웃 성공");
