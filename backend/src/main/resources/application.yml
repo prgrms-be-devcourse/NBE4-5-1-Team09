@@ -44,3 +44,6 @@ custom:
 
 file:
   upload-dir: src/main/resources/static/images
+
+redisson:
+  address: "redis://127.0.0.1:6379"

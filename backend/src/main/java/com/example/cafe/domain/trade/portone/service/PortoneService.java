@@ -4,7 +4,6 @@ import com.example.cafe.domain.trade.domain.entity.Trade;
 import com.example.cafe.domain.trade.domain.entity.TradeStatus;
 import com.example.cafe.domain.trade.portone.domain.dto.WebHook;
 import com.example.cafe.domain.trade.repository.TradeRepository;
-import com.example.cafe.domain.trade.service.user.UserTradeService;
 import com.siot.IamportRestClient.IamportClient;
 import com.siot.IamportRestClient.exception.IamportResponseException;
 import com.siot.IamportRestClient.request.CancelData;
@@ -23,7 +22,6 @@ import java.io.IOException;
 import java.math.BigDecimal;
 
 import static com.example.cafe.domain.trade.domain.entity.TradeStatus.PAY;
-import static com.example.cafe.domain.trade.domain.entity.TradeStatus.REFUSED;
 
 @Slf4j
 @Service
