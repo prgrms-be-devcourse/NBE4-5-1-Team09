@@ -15,33 +15,89 @@ import com.example.cafe.domain.trade.domain.entity.TradeItem;
 import com.example.cafe.domain.trade.domain.entity.TradeStatus;
 import com.example.cafe.domain.trade.portone.service.PortoneService;
 import com.example.cafe.domain.trade.repository.TradeRepository;
+import com.siot.IamportRestClient.exception.IamportResponseException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static com.example.cafe.domain.trade.domain.entity.TradeStatus.*;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class UserTradeService {
+public class UserTradeAtomicUpdateService {
 
     private final TradeRepository tradeRepository;
     private final ItemRepository itemRepository;
     private final PortoneService portoneService;
     private final MemberRepository memberRepository;
 
+    // 단일 상품 주문: 원자적 업데이트 쿼리를 사용하여 재고를 감소하고 주문 생성
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public OrderResponseDto tradeWithItemInfo(OrderRequestItemDto requestItemDto) {
+        Member member = memberRepository.findById(requestItemDto.getMemberId())
+                .orElseThrow(() -> new RuntimeException("멤버를 찾을 수 없습니다"));
+
+        int reqQuantity = requestItemDto.getQuantity();
+        if (reqQuantity < 0) {
+            throw new RuntimeException("구매 수량은 0보다 작을 수 없습니다");
+        }
+        // 원자적 업데이트: 재고가 충분할 때만 차감
+        int updated = itemRepository.decreaseStock(requestItemDto.getItemId(), reqQuantity);
+        if (updated == 0) {
+            throw new RuntimeException("재고가 부족합니다.");
+        }
+
+        // 업데이트 후 최신 item 정보 조회
+        Item item = itemRepository.findById(requestItemDto.getItemId())
+                .orElseThrow(() -> new RuntimeException("주문 하고자 하는 상품을 찾을 수 없습니다."));
+
+        // Trade 생성
+        Trade trade = makeTrade(member, BUY);
+        member.getTrades().add(trade);
+
+        TradeItem tradeItem = TradeItem.builder()
+                .trade(trade)
+                .item(item)
+                .quantity(reqQuantity)
+                .build();
+        tradeItem.setPrice();
+        trade.addTradeItem(tradeItem);
+
+        String tradeUUID = generateTradeUUID();
+        trade.setTradeUUID(tradeUUID);
+        trade.setTotalPrice(reqQuantity * item.getPrice());
+
+        try {
+            portoneService.prePurchase(tradeUUID, new BigDecimal(trade.getTotalPrice()));
+        } catch (IamportResponseException | IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        tradeRepository.save(trade);
+
+        return new OrderResponseDto(
+                trade.getId(),
+                trade.getTradeStatus(),
+                trade.getTotalPrice(),
+                trade.getTradeUUID()
+        );
+    }
+
+    // 장바구니 주문: 각 상품에 대해 원자적 업데이트 쿼리를 사용하여 재고 차감을 진행
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public OrderResponseDto tradeWithCart(Long memberId) {
-        Member member = memberRepository.findById(memberId).orElseThrow(() -> new RuntimeException("멤버를 찾을 수 없습니다"));
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("멤버를 찾을 수 없습니다"));
         List<CartItem> cartItems;
         try {
             cartItems = member.getCart().getCartItems();
@@ -52,56 +108,62 @@ public class UserTradeService {
             throw new RuntimeException("장바구니 카트가 비어있습니다.");
         }
 
+        // 각 상품별 재고 차감 처리 (모든 업데이트가 성공해야 주문 진행)
+        // 먼저 재고 부족 여부를 미리 체크
         for (CartItem cartItem : cartItems) {
-            if (!stockValidCheck(new OrderRequestItemDto(member.getId(),cartItem.getItem().getId(), cartItem.getQuantity()))) {
+            Item item = itemRepository.findById(cartItem.getItem().getId())
+                    .orElseThrow(() -> new RuntimeException("주문하고자 하는 상품을 찾을 수 없습니다."));
+            int reqQuantity = cartItem.getQuantity();
+            if (reqQuantity < 0) {
+                throw new RuntimeException("구매 수량은 0보다 작을 수 없습니다");
+            }
+            if (item.getItemStatus().equals(ItemStatus.SOLD_OUT) || reqQuantity > item.getStock()) {
                 throw new RuntimeException("요청한 상품 중 재고가 부족한 상품이 있습니다.");
             }
         }
 
-        Trade trade = makeTrade(member, BUY);
+        // 모든 상품에 대해 원자적 업데이트 실행
+        for (CartItem cartItem : cartItems) {
+            int updated = itemRepository.decreaseStock(cartItem.getItem().getId(), cartItem.getQuantity());
+            if (updated == 0) {
+                throw new RuntimeException("재고 차감 실패: 상품 " + cartItem.getItem().getId() + "의 재고가 부족합니다.");
+            }
+        }
 
-        //member 에 trade 추가
+        // 모든 재고 차감이 성공하면 Trade 생성 및 주문 처리
+        Trade trade = makeTrade(member, BUY);
         member.getTrades().add(trade);
 
-        //trade 에 장바구니에 있는 상품 전체 추가
         for (CartItem cartItem : cartItems) {
-             Item item = itemRepository.findById(cartItem.getItem().getId()).orElseThrow(() -> new RuntimeException("주문하고자 하는 상품을 찾을 수 없습니다."));
-
-            item.setStock(item.getStock() - cartItem.getQuantity());
-            item.autoCheckQuantityForSetStatus();
+            // 업데이트 후 최신 item 정보 조회
+            Item item = itemRepository.findById(cartItem.getItem().getId())
+                    .orElseThrow(() -> new RuntimeException("주문하고자 하는 상품을 찾을 수 없습니다."));
+            int reqQuantity = cartItem.getQuantity();
 
             TradeItem tradeItem = TradeItem.builder()
                     .trade(trade)
                     .item(item)
-                    .quantity(cartItem.getQuantity())
+                    .quantity(reqQuantity)
                     .build();
-
             tradeItem.setPrice();
-
             trade.addTradeItem(tradeItem);
         }
 
-        //trade 에 주문 상품 총 합 가격 설정
         trade.setTotalPrice(calculateTotalPrice(trade.getTradeItems()));
-
-        //trade 에 uuid 값 생성 후 추가
         String tradeUUID = generateTradeUUID();
         trade.setTradeUUID(tradeUUID);
 
-        //portone PG 사에 결제 요청 정보 저장
         try {
-            portoneService.prePurchase(tradeUUID,new BigDecimal(trade.getTotalPrice()));
-        } catch (Exception e) {
-            throw new RuntimeException(e + " : 구매 대행사 오류로 인해 결제 요청에 실패하였습니다.");
+            portoneService.prePurchase(tradeUUID, new BigDecimal(trade.getTotalPrice()));
+        } catch (IamportResponseException | IOException e) {
+            throw new RuntimeException(e);
         }
 
         // 카트 비우기
         member.getCart().getCartItems().clear();
 
-        //Trade 저장 (cascade 설정이 되어있다면 TradeItem도 함께 저장됨)
         tradeRepository.save(trade);
 
-        //응답 객체 생성 및 반환
         return new OrderResponseDto(
                 trade.getId(),
                 trade.getTradeStatus(),
@@ -109,94 +171,31 @@ public class UserTradeService {
                 trade.getTradeUUID()
         );
     }
-
-    public OrderResponseDto tradeWithItemInfo(OrderRequestItemDto requestItemDto) {
-        Member member = memberRepository.findById(requestItemDto.getMemberId()).orElseThrow(() -> new RuntimeException("멤버를 찾을 수 없습니다"));
-        if (!stockValidCheck(requestItemDto)) {
-            throw new RuntimeException("요청한 상품 중 재고가 부족한 상품이 있습니다.");
-        }
-
-        // Trade 생성
-        Trade trade = makeTrade(member, TradeStatus.BUY);
-
-        // member 에 trade 저장
-        member.getTrades().add(trade);
-
-        // 변경된 코드
-        Item item = itemRepository.findByIdForUpdate(requestItemDto.getItemId())
-                .orElseThrow(() -> new RuntimeException("주문 하고자 하는 상품을 찾을 수 없습니다."));
-
-        item.setStock(item.getStock() - requestItemDto.getQuantity());
-        item.autoCheckQuantityForSetStatus();
-
-        TradeItem tradeItem = TradeItem.builder()
-                .trade(trade)
-                .item(item)
-                .quantity(requestItemDto.getQuantity())
-                .build();
-
-        tradeItem.setPrice();
-        trade.addTradeItem(tradeItem);
-
-        String tradeUUID = generateTradeUUID();
-        trade.setTradeUUID(tradeUUID);
-        trade.setTotalPrice(requestItemDto.getQuantity() * item.getPrice());
-
-        try {
-            portoneService.prePurchase(tradeUUID,new BigDecimal(trade.getTotalPrice()));
-        } catch (Exception e) {
-            throw new RuntimeException(e + " : 구매 대행사 오류로 인해 결제 요청에 실패하였습니다.");
-        }
-
-        //Trade 저장 (cascade 설정이 되어있다면 TradeItem도 함께 저장됨)
-        tradeRepository.save(trade);
-
-        //응답 객체 생성 및 반환
-        return new OrderResponseDto(
-                trade.getId(),
-                trade.getTradeStatus(),
-                trade.getTotalPrice(),
-                trade.getTradeUUID()
-        );
-    }
-
-    // 포트원 PG 사 대신하여 결제 되었다고 처리할 수 있는 메서드
 
     public void processPayment(String uuid, int payAmount) {
-
-        //Trade 조회
         Trade trade = tradeRepository.findByTradeUUID(uuid)
                 .orElseThrow(() -> new RuntimeException("해당 거래를 찾을 수 없습니다: " + uuid));
 
-        //이미 결제 완료된 거래인지 확인
         try {
             if (trade.getTradeStatus() == PAY) {
                 throw new RuntimeException("이미 결제가 완료된 거래 입니다.");
-            } else if (trade.getTradeStatus() == REFUSED) {
+            } else if (trade.getTradeStatus() == TradeStatus.REFUSED) {
                 throw new RuntimeException("주문이 이미 취소된 거래 입니다.");
             }
-
-            //결제 금액과 지불 금액 일치 여부 확인 로직
             if (!trade.getTotalPrice().equals(payAmount)) {
                 throw new RuntimeException("주문 금액과 결제 금액이 다릅니다.");
             }
         } catch (Exception e) {
-            trade.setTradeStatus(REFUSED);
+            trade.setTradeStatus(TradeStatus.REFUSED);
             rollBackProductQuantity(trade);
             throw e;
         }
-
         trade.setTradeStatus(PAY);
     }
 
-    /**
-     * 주문 한 상품 중 취소 요청
-     * case : BUY, PAY
-     * BUY -> Trade 만 수정
-     * PAY -> PG 사 결제 취소까지 요청 필요
-     */
     public CancelResponseDto cancelTrade(CancelRequestDto requestDto) {
-        Trade trade = tradeRepository.findByTradeUUID(requestDto.getTradeUUID()).orElseThrow(() -> new RuntimeException("해당 거래를 찾을 수 없습니다."));
+        Trade trade = tradeRepository.findByTradeUUID(requestDto.getTradeUUID())
+                .orElseThrow(() -> new RuntimeException("해당 거래를 찾을 수 없습니다."));
         if (trade.getTradeStatus().equals(BUY)) {
             return cancelTradeOnBuy(requestDto);
         } else if (trade.getTradeStatus().equals(PAY)) {
@@ -206,79 +205,57 @@ public class UserTradeService {
         }
     }
 
-    //결제 전 취소 요청. -> PG 사로 새로운 결제 요청 보내야 함.
     public CancelResponseDto cancelTradeOnBuy(CancelRequestDto requestDto) {
+        // 결제 전 취소 로직 (구현 필요)
         return null;
     }
 
-    //결제 후 취소 요청 -> PG 사로 해당 결제에 대한 환불 요청
     public CancelResponseDto cancelTradeOnPay(CancelRequestDto requestDto) {
+        // 결제 후 취소 로직 (구현 필요)
         return null;
     }
-
 
     public void rollBackProductQuantity(Trade trade) {
-        List<TradeItem> tradeItems = trade.getTradeItems();
-        tradeItems.forEach(tradeItem -> {
-            tradeItem.getItem().setStock(tradeItem.getItem().getStock() + tradeItem.getQuantity());
-            tradeItem.getItem().autoCheckQuantityForSetStatus();
+        trade.getTradeItems().forEach(tradeItem -> {
+            Item item = tradeItem.getItem();
+            // 롤백 시, 재고를 복구하는 업데이트 쿼리를 별도로 만들 수도 있음
+            item.setStock(item.getStock() + tradeItem.getQuantity());
+            item.autoCheckQuantityForSetStatus();
         });
     }
 
-    private Trade makeTrade(Member member, TradeStatus buy) {
-        Trade trade = Trade.builder()
+    private Trade makeTrade(Member member, TradeStatus status) {
+        return Trade.builder()
                 .member(member)
-                .tradeStatus(buy)
+                .tradeStatus(status)
                 .tradeItems(new ArrayList<>())
                 .address(member.getAddress())
                 .email(member.getEmail())
                 .build();
-        return trade;
     }
-
 
     public static String generateTradeUUID() {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyMMddHHmmss");
         String currentTime = dateFormat.format(new Date());
-        String UUID = java.util.UUID.randomUUID().toString();
-        byte[] UUIDStringBytes = UUID.getBytes(StandardCharsets.UTF_8);
+        String uuid = java.util.UUID.randomUUID().toString();
+        byte[] uuidBytes = uuid.getBytes(StandardCharsets.UTF_8);
         byte[] hashBytes;
-
         try {
-            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-            hashBytes = messageDigest.digest(UUIDStringBytes);
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            hashBytes = md.digest(uuidBytes);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
-
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 4; i++) {
             sb.append(String.format("%02x", hashBytes[i]));
         }
-
         return currentTime + sb.toString();
     }
 
     public int calculateTotalPrice(List<TradeItem> tradeItems) {
-        return tradeItems.stream().mapToInt(item -> item.getItem().getPrice() * item.getQuantity()).sum();
-    }
-
-
-
-    private boolean stockValidCheck(OrderRequestItemDto requestDto) {
-        //동시성 이슈 해결 - Pessimistic Lock
-        Item item = itemRepository.findByIdForUpdate(requestDto.getItemId())
-                .orElseThrow(() -> new RuntimeException("주문 하고자 하는 상품을 찾을 수 없습니다."));
-
-        int reqQuantity = requestDto.getQuantity();
-        int itemStock = item.getStock();
-
-        if (reqQuantity < 0) {
-            throw new RuntimeException("구매 수량은 0보다 작을 수 없습니다");
-        }
-        if (item.getItemStatus().equals(ItemStatus.SOLD_OUT)) {
-            return false;
-        }
-        return reqQuantity <= itemStock;
+        return tradeItems.stream()
+                .mapToInt(ti -> ti.getItem().getPrice() * ti.getQuantity())
+                .sum();
     }
 }
