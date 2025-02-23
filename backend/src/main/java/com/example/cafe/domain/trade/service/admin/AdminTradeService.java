@@ -103,12 +103,6 @@ public class AdminTradeService {
     }
 
     private Trade getTrade(AdminConfirmRequestDto requestDto) {
-        if (!memberRepository.findById(requestDto.getAdminId())
-                .orElseThrow(() -> new RuntimeException("해당 사용자를 찾을 수 없습니다."))
-                .getAuthority().equals("ADMIN")) {
-            throw new RuntimeException("관리자 권한의 사용자만 거래 상태를 변경할 수 있습니다.");
-        }
-
         Trade trade = tradeRepository.findByTradeUUID(requestDto.getTradeUUID())
                 .orElseThrow(() -> new RuntimeException("TradeUUID : [" + requestDto.getTradeUUID() + "] 해당 거래를 찾을 수 없습니다."));
         return trade;
