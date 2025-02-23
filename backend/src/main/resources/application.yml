@@ -12,9 +12,9 @@ spring:
       - "classpath:application-SECRET-KEY.yml"
       - "classpath:application-secret.yml"
   datasource:
-    url: jdbc:mysql://127.0.0.1:3307/team_09_project1?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
-    username: root
-    password: 1q2w3e4r
+    url: ${db.url}
+    username: ${db.username}
+    password: ${db.password}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       auto-commit: false
