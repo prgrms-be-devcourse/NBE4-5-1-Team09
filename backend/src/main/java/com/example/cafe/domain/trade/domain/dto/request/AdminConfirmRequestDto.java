@@ -4,7 +4,6 @@ import lombok.Data;
 
 @Data
 public class AdminConfirmRequestDto {
-    private Long adminId;
     private String tradeUUID;
     private boolean changeToDeliveryReady;
 }
