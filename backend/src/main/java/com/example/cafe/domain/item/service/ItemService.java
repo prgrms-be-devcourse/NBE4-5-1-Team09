@@ -55,8 +55,9 @@ public class ItemService {
         item.setAvgRating(0.0);
         item.setItemStatus(ItemStatus.ON_SALE);
 
-        Item savedProduct = itemRepository.save(item);
-        return new ItemResponseDto(savedProduct);
+        Item savedItem = itemRepository.save(item);
+
+        return new ItemResponseDto(savedItem);
     }
 
     @Transactional
@@ -71,6 +72,8 @@ public class ItemService {
         item.setImagePath(itemRequestDto.getImagePath());
         item.setContent(itemRequestDto.getContent());
         item.setCategory(itemRequestDto.getCategory());
+
+        item.autoCheckQuantityForSetStatus();
 
         return new ItemResponseDto(item);
     }

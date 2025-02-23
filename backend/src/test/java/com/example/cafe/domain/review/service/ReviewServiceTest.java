@@ -160,14 +160,18 @@ class ReviewServiceTest {
     /** ✅ 상품별 리뷰 조회 테스트 */
     @Test
     void getReviewsByItem_Success() {
-        // 여러 개의 리뷰를 반환하도록 수정
-        when(reviewRepository.findByItem_IdOrderByCreatedAtDesc(1L))
+        Long itemId = 1L;
+        Long memberId = 123L;  // 테스트할 memberId
+        ReviewSortType sortType = ReviewSortType.LATEST;
+
+        // memberId가 123이 아닌 리뷰들을 반환하도록 수정
+        when(reviewRepository.findByItem_IdAndMember_IdNotOrderByCreatedAtDesc(itemId, memberId))
                 .thenReturn(Arrays.asList(testReview1, testReview2, testReview3, testReview4, testReview5));
 
-        List<Review> reviews = reviewService.getReviewsByItem(1L, ReviewSortType.LATEST);
+        List<Review> reviews = reviewService.getReviewsByItem(itemId, memberId, sortType);
 
-        assertFalse(reviews.isEmpty());
-        assertEquals(5, reviews.size());  // 리뷰가 5개로 늘어났으므로, 5개를 확인
+        assertFalse(reviews.isEmpty());  // 리뷰가 비어있지 않음을 확인
+        assertEquals(5, reviews.size()); // 리뷰가 5개로 반환됨을 확인
     }
 
     /** ✅ 평균 평점 조회 테스트 */

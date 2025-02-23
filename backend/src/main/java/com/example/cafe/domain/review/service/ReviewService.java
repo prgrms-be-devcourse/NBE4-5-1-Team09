@@ -73,7 +73,7 @@ public class ReviewService {
     }
 
     // 상품별 리뷰 조회 (수동 재시도 3번)
-    public List<Review> getReviewsByItem(Long itemId, ReviewSortType sortType) {
+    public List<Review> getReviewsByItem(Long itemId, Long memberId, ReviewSortType sortType) {
         int maxAttempts = 3;
         int attempt = 0;
         while (attempt < maxAttempts) {
@@ -81,14 +81,14 @@ public class ReviewService {
                 List<Review> reviews;
                 switch (sortType) {
                     case HIGHEST_RATING:
-                        reviews = reviewRepository.findByItem_IdOrderByRatingDesc(itemId);
+                        reviews = reviewRepository.findByItem_IdAndMember_IdNotOrderByRatingDesc(itemId, memberId);
                         break;
                     case LOWEST_RATING:
-                        reviews = reviewRepository.findByItem_IdOrderByRatingAsc(itemId);
+                        reviews = reviewRepository.findByItem_IdAndMember_IdNotOrderByRatingAsc(itemId, memberId);
                         break;
                     case LATEST:
                     default:
-                        reviews = reviewRepository.findByItem_IdOrderByCreatedAtDesc(itemId);
+                        reviews = reviewRepository.findByItem_IdAndMember_IdNotOrderByCreatedAtDesc(itemId, memberId);
                         break;
                 }
 
@@ -139,5 +139,21 @@ public class ReviewService {
             }
         }
         throw new IllegalArgumentException("전체 리뷰 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
+    }
+
+    public List<Review> getReviewsByItemAndMember(Long itemId, Long memberId) {
+        int maxAttempts = 3;
+        int attempt = 0;
+        while (attempt < maxAttempts) {
+            try {
+                return reviewRepository.findByItemIdAndMemberId(itemId, memberId);
+            } catch (DataAccessException e) {
+                attempt++;
+                if (attempt >= maxAttempts) {
+                    throw new IllegalArgumentException("리뷰 조회 중 오류가 발생했습니다. 다시 시도해주세요.", e);
+                }
+            }
+        }
+        throw new IllegalArgumentException("리뷰 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
 }
