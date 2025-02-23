@@ -1,5 +1,6 @@
 package com.example.cafe.domain.member.service;
 
+import com.example.cafe.domain.member.dto.MemberProfileDto;
 import com.example.cafe.domain.member.dto.ProfileResponseDto;
 import com.example.cafe.domain.member.dto.ProfileUpdateRequestDto;
 import com.example.cafe.domain.member.entity.Member;
@@ -12,7 +13,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -197,5 +200,17 @@ public class MemberService {
         member.setResetPasswordCode(null);
         memberRepository.save(member);
         log.info("비밀번호 재설정 성공: {}", email);
+    }
+
+    public List<MemberProfileDto> getAllMembers() {
+        List<Member> members = memberRepository.findAll();
+        return members.stream()
+                .map(member -> MemberProfileDto.builder()
+                        .id(member.getId())
+                        .email(member.getEmail())
+                        .address(member.getAddress())
+                        .authority(member.getAuthority())
+                        .build())
+                .collect(Collectors.toList());
     }
 }

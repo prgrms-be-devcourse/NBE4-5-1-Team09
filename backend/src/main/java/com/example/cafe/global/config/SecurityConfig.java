@@ -1,6 +1,7 @@
 package com.example.cafe.global.config;
 
 import com.example.cafe.global.filter.JwtAuthenticationFilter;
+import com.example.cafe.global.handler.CustomAccessDeniedHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -27,6 +29,10 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 // 세션을 사용하지 않는 stateless 설정
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // 예외 처리 설정: 권한 부족 시 AccessDeniedHandler 사용
+                .exceptionHandling(exception -> exception
+                        .accessDeniedHandler(customAccessDeniedHandler)
+                )
                 // H2 콘솔 및 기타 엔드포인트 접근 설정
                 .authorizeHttpRequests(authz -> authz
                         // 상품 등록, 수정, 삭제는 관리자만 가능

@@ -4,6 +4,7 @@ import com.example.cafe.domain.member.dto.*;
 import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.domain.member.service.AuthTokenService;
 import com.example.cafe.domain.member.service.MemberService;
+import com.example.cafe.global.annotation.CheckPermission;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -204,6 +206,13 @@ public class MemberController {
         return ResponseEntity.ok("비밀번호 재설정 성공");
     }
 
+    @CheckPermission("ADMIN")
+    @GetMapping("/members")
+    public ResponseEntity<List<MemberProfileDto>> getAllMembers() {
+        List<MemberProfileDto> members = memberService.getAllMembers();
+        return ResponseEntity.ok(members);
+    }
+
     private String extractEmailFromToken(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new IllegalArgumentException("인증 토큰이 제공되지 않았습니다.");
@@ -215,4 +224,6 @@ public class MemberController {
         }
         return (String) claims.get("email");
     }
+
+
 }
