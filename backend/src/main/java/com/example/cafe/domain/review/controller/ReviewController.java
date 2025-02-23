@@ -5,6 +5,7 @@ import com.example.cafe.domain.review.dto.ReviewResponseDto;
 import com.example.cafe.domain.review.entity.Review;
 import com.example.cafe.domain.review.entity.ReviewSortType;
 import com.example.cafe.domain.review.service.ReviewService;
+import com.example.cafe.global.annotation.CheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -83,6 +84,7 @@ public class ReviewController {
     }
 
     @Operation(summary = "전체 리뷰 조회 (관리자용)", description = "모든 리뷰를 조회하는 관리자용 API입니다.")
+    @CheckPermission("ADMIN")
     @GetMapping("/all")
     public ResponseEntity<List<ReviewResponseDto>> getAllReviews() {
         List<Review> reviews = reviewService.findAllReviews();

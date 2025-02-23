@@ -23,7 +23,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 @RestController
-@RequestMapping("/api/member")
+@RequestMapping("/member")
 @RequiredArgsConstructor
 @Tag(name = "Member API", description = "회원 관련 API 엔드포인트")
 public class MemberController {
@@ -206,6 +206,7 @@ public class MemberController {
         return ResponseEntity.ok("비밀번호 재설정 성공");
     }
 
+    @Operation(summary = "관리자 권한 확인용 전체 프로필 조회")
     @CheckPermission("ADMIN")
     @GetMapping("/members")
     public ResponseEntity<List<MemberProfileDto>> getAllMembers() {

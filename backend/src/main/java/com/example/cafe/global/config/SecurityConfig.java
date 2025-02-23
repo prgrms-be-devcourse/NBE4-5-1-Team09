@@ -35,10 +35,6 @@ public class SecurityConfig {
                 )
                 // H2 콘솔 및 기타 엔드포인트 접근 설정
                 .authorizeHttpRequests(authz -> authz
-                        // 상품 등록, 수정, 삭제는 관리자만 가능
-                        .requestMatchers(HttpMethod.POST, "/items").hasAuthority("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/items/{id}").hasAuthority("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/items/{id}").hasAuthority("ADMIN")
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
