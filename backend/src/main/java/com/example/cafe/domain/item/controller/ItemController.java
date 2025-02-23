@@ -3,6 +3,7 @@ package com.example.cafe.domain.item.controller;
 import com.example.cafe.domain.item.dto.ItemRequestDto;
 import com.example.cafe.domain.item.dto.ItemResponseDto;
 import com.example.cafe.domain.item.service.ItemService;
+import com.example.cafe.global.annotation.CheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -33,6 +34,7 @@ public class ItemController {
         return ResponseEntity.ok(itemService.getItem(id));
     }
 
+    @CheckPermission("ADMIN")
     @Operation(summary = "상품 생성(관리자만 가능)")
     @PostMapping
     public ResponseEntity<ItemResponseDto> createItem(@RequestBody ItemRequestDto itemRequestDto) {
@@ -41,6 +43,7 @@ public class ItemController {
         return ResponseEntity.status(HttpStatus.CREATED).body(savedItem);
     }
 
+    @CheckPermission("ADMIN")
     @Operation(summary = "상품 수정(관리자만 가능)")
     @PutMapping("/{id}")
     public ResponseEntity<ItemResponseDto> updateItem(@PathVariable Long id, @RequestBody @Valid ItemRequestDto itemRequestDto) {
@@ -49,6 +52,7 @@ public class ItemController {
         return ResponseEntity.ok(updatedItem);
     }
 
+    @CheckPermission("ADMIN")
     @Operation(summary = "상품 삭제(관리자만 가능)")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteItem(@PathVariable Long id) {

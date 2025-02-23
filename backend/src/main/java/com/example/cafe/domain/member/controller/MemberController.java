@@ -4,6 +4,7 @@ import com.example.cafe.domain.member.dto.*;
 import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.domain.member.service.AuthTokenService;
 import com.example.cafe.domain.member.service.MemberService;
+import com.example.cafe.global.annotation.CheckPermission;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,7 +23,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 @RestController
-@RequestMapping("/api/member")
+@RequestMapping("/member")
 @RequiredArgsConstructor
 @Tag(name = "Member API", description = "회원 관련 API 엔드포인트")
 public class MemberController {
@@ -52,6 +54,7 @@ public class MemberController {
 
         Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
         refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(true);
         refreshCookie.setPath("/");
         refreshCookie.setMaxAge(604800); // 7일
         response.addCookie(refreshCookie);
@@ -71,6 +74,7 @@ public class MemberController {
 
         Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
         refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(true);
         refreshCookie.setPath("/");
         refreshCookie.setMaxAge(604800); // 7일
         response.addCookie(refreshCookie);
@@ -120,8 +124,9 @@ public class MemberController {
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletResponse response) {
         Cookie cookie = new Cookie("refreshToken", null);
-        cookie.setPath("/");
         cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setPath("/");
         cookie.setMaxAge(0); // 쿠키 삭제
         response.addCookie(cookie);
         return ResponseEntity.ok("로그아웃 성공");
@@ -201,6 +206,14 @@ public class MemberController {
         return ResponseEntity.ok("비밀번호 재설정 성공");
     }
 
+    @Operation(summary = "관리자 권한 확인용 전체 프로필 조회")
+    @CheckPermission("ADMIN")
+    @GetMapping("/members")
+    public ResponseEntity<List<MemberProfileDto>> getAllMembers() {
+        List<MemberProfileDto> members = memberService.getAllMembers();
+        return ResponseEntity.ok(members);
+    }
+
     private String extractEmailFromToken(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new IllegalArgumentException("인증 토큰이 제공되지 않았습니다.");
@@ -212,4 +225,6 @@ public class MemberController {
         }
         return (String) claims.get("email");
     }
+
+
 }
