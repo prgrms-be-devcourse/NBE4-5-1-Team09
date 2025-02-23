@@ -5,7 +5,9 @@ import com.example.cafe.domain.item.entity.ItemStatus;
 import com.example.cafe.domain.item.repository.ItemRepository;
 import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.domain.member.repository.MemberRepository;
+import com.example.cafe.domain.trade.domain.dto.request.CancelRequestDto;
 import com.example.cafe.domain.trade.domain.dto.request.OrderRequestItemDto;
+import com.example.cafe.domain.trade.domain.dto.response.CancelResponseDto;
 import com.example.cafe.domain.trade.domain.dto.response.OrderResponseDto;
 import com.example.cafe.domain.trade.domain.entity.CartItem;
 import com.example.cafe.domain.trade.domain.entity.Trade;
@@ -24,6 +26,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import static com.example.cafe.domain.trade.domain.entity.TradeStatus.*;
 
@@ -36,12 +39,6 @@ public class UserTradeService {
     private final ItemRepository itemRepository;
     private final PortoneService portoneService;
     private final MemberRepository memberRepository;
-
-    /**
-     * 1. 장바구니에서 주문 요청
-     * 2. 상품 페이지에서 바로 주문 요청
-     * 3. 결제 요청
-     */
 
     public OrderResponseDto tradeWithCart(Long memberId) {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new RuntimeException("멤버를 찾을 수 없습니다"));
@@ -191,6 +188,35 @@ public class UserTradeService {
 
         trade.setTradeStatus(PAY);
     }
+
+    /**
+     * 주문 한 상품 중 취소 요청
+     * case : BUY, PAY
+     * BUY -> Trade 만 수정
+     * PAY -> PG 사 결제 취소까지 요청 필요
+     */
+    public CancelResponseDto cancelTrade(CancelRequestDto requestDto) {
+        Trade trade = tradeRepository.findByTradeUUID(requestDto.getTradeUUID()).orElseThrow(() -> new RuntimeException("해당 거래를 찾을 수 없습니다."));
+        if (trade.getTradeStatus().equals(BUY)) {
+            return cancelTradeOnBuy(requestDto);
+        } else if (trade.getTradeStatus().equals(PAY)) {
+            return cancelTradeOnPay(requestDto);
+        } else {
+            throw new RuntimeException("결제 이후 취소는 관리자에게 문의해주세요.");
+        }
+    }
+
+    //결제 전 취소 요청. -> PG 사로 새로운 결제 요청 보내야 함.
+    public CancelResponseDto cancelTradeOnBuy(CancelRequestDto requestDto) {
+        return null;
+    }
+
+    //결제 후 취소 요청 -> PG 사로 해당 결제에 대한 환불 요청
+    public CancelResponseDto cancelTradeOnPay(CancelRequestDto requestDto) {
+        return null;
+    }
+
+
     public void rollBackProductQuantity(Trade trade) {
         List<TradeItem> tradeItems = trade.getTradeItems();
         tradeItems.forEach(tradeItem -> {
