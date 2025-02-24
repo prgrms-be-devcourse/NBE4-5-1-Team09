@@ -56,23 +56,27 @@ public class PortoneService {
         }
     }
 
-
-    public void refund(Long tradeId, BigDecimal amount) {
-        Trade refundTrade = tradeRepository.findById(tradeId).orElseThrow(() -> new RuntimeException("환불 요청에 대한 해당 거래를 찾을 수 없음"));
+    public void refund(String uuid, BigDecimal refundAmount, BigDecimal checkSumAmount) {
+        Trade refundTrade = tradeRepository.findByTradeUUID(uuid)
+                .orElseThrow(() -> new RuntimeException("환불 요청에 대한 해당 거래를 찾을 수 없음"));
         String merchantUid = refundTrade.getTradeUUID();
+        log.info("환불 거래 UUID : {}", uuid);
         try {
-            CancelData cancelData = new CancelData(merchantUid, false, amount);
-            cancelData.setChecksum(new BigDecimal(refundTrade.getTotalPrice()));
+            CancelData cancelData = new CancelData(merchantUid, false, refundAmount);
+            cancelData.setChecksum(checkSumAmount);
             IamportResponse<Payment> iamportResponse = iamportClient.cancelPaymentByImpUid(cancelData);
+            if(iamportResponse.getResponse() == null) {
+                throw new RuntimeException("환불 API 응답이 올바르지 않습니다.");
+            }
             log.info("cancel amount : {}", iamportResponse.getResponse().getCancelAmount());
             log.info("original amount : {}", iamportResponse.getResponse().getAmount());
-            refundTrade.setTotalPrice(refundTrade.getTotalPrice() - amount.intValue());
         } catch (IamportResponseException e) {
             throw new RuntimeException("port one 결제 취소 실패");
         } catch (IOException e) {
             throw new RuntimeException("취소 하고자 하는 거래 데이터를 찾을 수 없음");
         }
     }
+
 
     public void validateWebHook(WebHook webHook) {
         IamportResponse<Payment> paymentIamportResponse;

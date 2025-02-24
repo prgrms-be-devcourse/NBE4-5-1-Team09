@@ -1,7 +1,9 @@
 package com.example.cafe.domain.trade.controller.user;
 
 import com.example.cafe.domain.member.service.AuthTokenService;
+import com.example.cafe.domain.trade.domain.dto.request.CancelRequestDto;
 import com.example.cafe.domain.trade.domain.dto.request.OrderRequestItemDto;
+import com.example.cafe.domain.trade.domain.dto.response.CancelResponseDto;
 import com.example.cafe.domain.trade.domain.dto.response.OrderResponseDto;
 import com.example.cafe.domain.trade.domain.dto.response.OrdersResponseDto;
 import com.example.cafe.domain.trade.service.user.UserTradeAtomicUpdateService;
@@ -46,5 +48,14 @@ public class UserTradeController {
         return ResponseEntity.ok(service.showAllTradeItems(authTokenService.getIdFromToken(authHeader)));
     }
 
+    @Operation(summary = "사용자가 주문 후 특정 상품 취소", description = "취소 희망 상품 ID, 수량을 List 로 받을 수 있습니다.")
+    @PostMapping("cancel/buy")
+    public ResponseEntity<CancelResponseDto> cancelOnBuy(
+            @Parameter(hidden = true)
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody CancelRequestDto cancelRequestDto
+    ) {
+        return ResponseEntity.ok(service.cancelTrade(authTokenService.getIdFromToken(authHeader), cancelRequestDto));
+    }
 
 }

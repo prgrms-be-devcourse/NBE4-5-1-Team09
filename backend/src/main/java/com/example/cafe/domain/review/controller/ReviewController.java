@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Tag(name = "Review API", description = "리뷰 관련 CRUD 및 조회 기능을 제공합니다.")  // Swagger 그룹화 태그
+@Tag(name = "Review API", description = "리뷰 관련 CRUD 및 조회 기능을 제공합니다.")
 @RestController
 @RequestMapping("/reviews")
 @RequiredArgsConstructor
@@ -31,7 +31,7 @@ public class ReviewController {
     @PostMapping("/create")
     public ResponseEntity<ReviewResponseDto> createReview(@RequestBody ReviewRequestDto reviewRequestDto) {
         Review review = reviewService.createReview(
-                reviewRequestDto.getMemberId(),
+                reviewRequestDto.getMemberEmail(),  // 이메일로 변경
                 reviewRequestDto.getItemId(),
                 reviewRequestDto.getReviewContent(),
                 reviewRequestDto.getRating()
@@ -61,14 +61,14 @@ public class ReviewController {
     }
 
     @Operation(summary = "상품별 리뷰 조회", description = "특정 상품에 대한 리뷰 목록을 조회합니다. 내 리뷰는 제외됩니다.")
-    @GetMapping("/item/{itemId}/{memberId}")
+    @GetMapping("/item/{itemId}/{memberEmail}")
     public ResponseEntity<List<ReviewResponseDto>> getReviewsByItem(
             @Parameter(description = "상품 ID", example = "1") @PathVariable Long itemId,
-            @Parameter(description = "회원 ID", example = "123") @PathVariable Long memberId,
+            @Parameter(description = "회원 이메일", example = "example@email.com") @PathVariable String memberEmail,
             @Parameter(description = "정렬 기준 (LATEST, HIGHEST_RATING, LOWEST_RATING)", example = "LATEST") @RequestParam(defaultValue = "LATEST") ReviewSortType sortType) {
 
-        // 서비스 호출 시 memberId를 전달하여 내 리뷰를 제외한 리뷰를 조회
-        List<Review> reviews = reviewService.getReviewsByItem(itemId, memberId, sortType);
+        // 서비스 호출 시 memberEmail을 전달하여 내 리뷰를 제외한 리뷰를 조회
+        List<Review> reviews = reviewService.getReviewsByItem(itemId, memberEmail, sortType);
 
         // 리뷰를 ResponseDto로 변환하여 응답
         List<ReviewResponseDto> responseDtos = reviews.stream()
@@ -97,12 +97,12 @@ public class ReviewController {
     }
 
     @Operation(summary = "내가 작성한 특정 상품 리뷰 조회", description = "현재 로그인한 사용자가 특정 상품에 남긴 리뷰를 조회합니다.")
-    @GetMapping("/my/item/{itemId}/{memberId}")
+    @GetMapping("/my/item/{itemId}/{memberEmail}")
     public ResponseEntity<List<ReviewResponseDto>> getMyReviewsByItem(
             @Parameter(description = "상품 ID", example = "1") @PathVariable Long itemId,
-            @Parameter(description = "회원 ID", example = "123") @PathVariable Long memberId) {
+            @Parameter(description = "회원 이메일", example = "example@email.com") @PathVariable String memberEmail) {
 
-        List<Review> reviews = reviewService.getReviewsByItemAndMember(itemId, memberId);
+        List<Review> reviews = reviewService.getReviewsByItemAndMember(itemId, memberEmail);
         List<ReviewResponseDto> responseDtos = reviews.stream()
                 .map(ReviewResponseDto::fromEntity)
                 .collect(Collectors.toList());

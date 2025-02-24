@@ -22,7 +22,7 @@ public class Review {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "member_id")
+    @JoinColumn(name = "member_email")  // 이메일로 연결
     private Member member;
 
     @ManyToOne
@@ -30,7 +30,7 @@ public class Review {
     private Item item;
 
     @Column(name = "review_content", nullable = false)
-    private String review_content;  //
+    private String reviewContent;
 
     @Column(name = "rating", nullable = false)
     private double rating;
@@ -41,14 +41,12 @@ public class Review {
     @Column(name = "modified_at", nullable = false)
     private LocalDateTime modifiedAt;
 
-    // 엔티티가 처음 저장될 때 실행
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
-        this.modifiedAt = LocalDateTime.now(); // 생성 시점과 동일하게 초기화
+        this.modifiedAt = LocalDateTime.now();
     }
 
-    // 엔티티가 업데이트될 때 실행
     @PreUpdate
     public void preUpdate() {
         this.modifiedAt = LocalDateTime.now();
