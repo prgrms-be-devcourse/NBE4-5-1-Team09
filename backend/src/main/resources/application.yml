@@ -23,6 +23,7 @@ spring:
     hibernate:
       ddl-auto: update
       dialect: org.hibernate.dialect.MySQL8Dialect
+
     show-sql: false
     properties:
       hibernate:
@@ -45,3 +46,6 @@ custom:
 
 file:
   upload-dir: src/main/resources/static/images
+
+redisson:
+  address: "redis://127.0.0.1:6379"
