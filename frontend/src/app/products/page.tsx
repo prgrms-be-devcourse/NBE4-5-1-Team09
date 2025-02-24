@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import Link from "next/link";
 
 interface Product {
@@ -34,18 +35,13 @@ export default function HomePage() {
       if (category) params.append("category", category);
       if (minPrice) params.append("minPrice", minPrice);
       if (maxPrice) params.append("maxPrice", maxPrice);
-      // 백엔드에 sort 파라미터 전달해도 무시되므로, 클라이언트에서 정렬 처리
       if (sort) params.append("sort", sort);
-      // page와 size 기본값
       params.append("page", "0");
       params.append("size", "10");
 
-      // 백틱(``)을 사용하여 문자열 보간 처리
-      const res = await fetch(
+      const { data } = await axios.get(
         `http://localhost:8080/items/search?${params.toString()}`
       );
-      if (!res.ok) throw new Error("상품 목록을 불러오지 못했습니다.");
-      const data: Product[] = await res.json();
 
       // 클라이언트 측 정렬 처리
       let sortedData = data;
@@ -56,7 +52,6 @@ export default function HomePage() {
           } else if (sort === "priceDesc") {
             return b.price - a.price;
           } else if (sort === "ratingDesc") {
-            // avgRating이 null인 경우 0으로 취급
             const ratingA = a.avgRating ?? 0;
             const ratingB = b.avgRating ?? 0;
             return ratingB - ratingA;
@@ -194,6 +189,18 @@ export default function HomePage() {
                   <p className="text-yellow-500">
                     평점: {product.avgRating ?? "-"}
                   </p>
+
+                  {/* 구매 가능 여부 표시 */}
+                  <p
+                    className={`text-lg font-semibold ${
+                      product.itemStatus === "ON_SALE"
+                        ? "text-green-500"
+                        : "text-red-500"
+                    }`}
+                  >
+                    {product.itemStatus === "ON_SALE" ? "구매 가능" : "품절"}
+                  </p>
+
                   <Link
                     href={`/products/${product.id}`}
                     className="text-blue-600 hover:underline"
