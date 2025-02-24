@@ -10,6 +10,7 @@ import com.example.cafe.domain.review.repository.ReviewRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.dao.DataAccessException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -45,6 +46,8 @@ public class ReviewService {
         review.setCreatedAt(LocalDateTime.now());
         review.setModifiedAt(LocalDateTime.now());
 
+        updateItemAverageRating(review.getItem().getId());
+
         return reviewRepository.save(review);
     }
 
@@ -61,6 +64,8 @@ public class ReviewService {
         review.setRating(rating);
         review.setModifiedAt(LocalDateTime.now());
 
+        updateItemAverageRating(review.getItem().getId());
+
         return reviewRepository.save(review);
     }
 
@@ -69,7 +74,10 @@ public class ReviewService {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("Review not found"));
 
+        Long itemId = review.getItem().getId();
         reviewRepository.delete(review);
+
+        updateItemAverageRating(itemId);
     }
 
     // 상품별 리뷰 조회 (수동 재시도 3번)
@@ -122,6 +130,22 @@ public class ReviewService {
             }
         }
         throw new IllegalArgumentException("평균 평점 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
+    }
+
+    // 상품별 평균 평점 설정
+    @Transactional
+    public void updateItemAverageRating(Long itemId) {
+
+        Double avgRating = getAverageRating(itemId);
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 아이템이 존재하지 않습니다."));
+
+        if (avgRating == null) {
+            avgRating = 0.0;
+        }
+
+        item.setAvgRating(avgRating);
+        itemRepository.save(item);
     }
 
     // 전체 리뷰 조회 (수동 재시도 3번)

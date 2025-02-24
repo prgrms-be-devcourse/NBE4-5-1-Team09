@@ -2,6 +2,8 @@ package com.example.cafe.domain.item.controller;
 
 import com.example.cafe.domain.item.dto.ItemRequestDto;
 import com.example.cafe.domain.item.dto.ItemResponseDto;
+import com.example.cafe.domain.item.entity.ItemCategory;
+import com.example.cafe.domain.item.entity.ItemStatus;
 import com.example.cafe.domain.item.service.ItemService;
 import com.example.cafe.global.annotation.CheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
@@ -59,5 +61,45 @@ public class ItemController {
 
         itemService.deleteItem(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "상품 검색 및 필터링")
+    @GetMapping("/search")
+    public ResponseEntity<List<ItemResponseDto>> searchItems(@RequestParam(required = false) String keyword,
+                                                             @RequestParam(required = false) ItemCategory category,
+                                                             @RequestParam(required = false) Integer minPrice,
+                                                             @RequestParam(required = false) Integer maxPrice,
+                                                             @RequestParam(defaultValue = "0") int page,
+                                                             @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(itemService.searchItems(keyword, category, minPrice, maxPrice, page, size));
+    }
+
+    @Operation(summary = "카테고리별 상품 조회")
+    @GetMapping("/category/{category}")
+    public ResponseEntity<List<ItemResponseDto>> getItemsByCategory(
+            @PathVariable ItemCategory category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(itemService.getItemsByCategory(category, page, size));
+    }
+
+    @Operation(summary = "상품 상태별 조회")
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<ItemResponseDto>> getItemsByStatus(
+            @PathVariable ItemStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(itemService.getItemsByStatus(status, page, size));
+    }
+
+    @Operation(summary = "평점 높은 상품 조회")
+    @GetMapping("/top-rated")
+    public ResponseEntity<List<ItemResponseDto>> getTopRatedItems(
+            @RequestParam(defaultValue = "5") int limit) {
+
+        return ResponseEntity.ok(itemService.getTopRatedItems(limit));
     }
 }
