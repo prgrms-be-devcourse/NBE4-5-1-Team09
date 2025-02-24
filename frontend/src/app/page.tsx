@@ -124,7 +124,7 @@ export default function HomePage() {
                     가격: {product.price}
                   </p>
                   <p className="text-yellow-500 mb-2">
-                    평점: {product.avgRating ?? "-"}
+                  평점: {product.avgRating ? product.avgRating.toFixed(1) : "-"}
                   </p>
                   {/* 수량 입력 필드 */}
                   <div className="flex items-center gap-2 mb-4">

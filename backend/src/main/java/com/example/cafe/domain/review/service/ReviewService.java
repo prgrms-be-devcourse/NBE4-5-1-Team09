@@ -1,5 +1,6 @@
 package com.example.cafe.domain.review.service;
 
+import com.example.cafe.domain.item.service.ItemService;
 import com.example.cafe.domain.review.dto.ReviewRequestDto;
 import com.example.cafe.domain.review.entity.Review;
 import com.example.cafe.domain.review.entity.ReviewSortType;
@@ -10,6 +11,7 @@ import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.domain.item.entity.Item;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -20,7 +22,9 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final MemberRepository memberRepository;
     private final ItemRepository itemRepository;
+    private final ItemService itemService;
 
+    @Transactional
     public Review createReview(String memberEmail, Long itemId, String reviewContent, double rating) {
         Member member = memberRepository.findByEmail(memberEmail)
                 .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
@@ -33,9 +37,15 @@ public class ReviewService {
         review.setReviewContent(reviewContent);
         review.setRating(rating);
 
-        return reviewRepository.save(review);
+        Review savedReview = reviewRepository.save(review);
+
+        // 평균 평점 다시 계산
+        itemService.getAverageRating(itemId);
+
+        return savedReview;
     }
 
+    @Transactional
     public Review updateReview(Long reviewId, String reviewContent, double rating) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("리뷰가 존재하지 않습니다."));
@@ -43,15 +53,26 @@ public class ReviewService {
         review.setReviewContent(reviewContent);
         review.setRating(rating);
 
-        return reviewRepository.save(review);
+        Review updatedReview = reviewRepository.save(review);
+
+        // 평균 평점 다시 계산
+        itemService.getAverageRating(review.getItem().getId());
+
+        return updatedReview;
     }
 
+    @Transactional
     public void deleteReview(Long reviewId) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("리뷰가 존재하지 않습니다."));
 
+        Long itemId = review.getItem().getId();
         reviewRepository.delete(review);
+
+        // 평균 평점 다시 계산
+        itemService.getAverageRating(itemId);
     }
+
 
     public List<Review> getReviewsByItem(Long itemId, String memberEmail, ReviewSortType sortType) {
         if (sortType == ReviewSortType.LATEST) {

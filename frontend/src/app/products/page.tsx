@@ -212,7 +212,7 @@ export default function HomePage() {
                     카테고리: {product.category}
                   </p>
                   <p className="text-yellow-500">
-                    평점: {product.avgRating ?? "-"}
+                  평점: {product.avgRating ? product.avgRating.toFixed(1) : "-"}
                   </p>
                   <div className="flex flex-col gap-2 mt-4">
                     <Link
