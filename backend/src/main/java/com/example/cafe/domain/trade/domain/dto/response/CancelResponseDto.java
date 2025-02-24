@@ -8,17 +8,18 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 public class CancelResponseDto {
-    private Long memberId;
     private Long tradeId;
     private String tradeUUID;
     private boolean isRefund;
     private int refundPrice;
 
-    private List<TradeItemDto> tradeItemDtoList;
+    private List<RemainingTradeItemDto> tradeItemDtoList;
 
+
+    //취소된 itemId 와 취소된 수량
     @Data
     @AllArgsConstructor
-    public static class TradeItemDto {
+    public static class RemainingTradeItemDto {
         private Long itemId;
         private Integer quantity;
     }

@@ -24,9 +24,16 @@ public class OrdersResponseDto {
 
     @Data
     @AllArgsConstructor
-    public static class OrderItemsDto {
+    public static class OrderItemDto {
         private Long itemId;
         private int quantity;
         private String itemName;
     }
+
+    @Data
+    public static class OrderItemsDto {
+        private String tradeUUID;
+        private List<OrderItemDto> orderItemDtoList = new ArrayList<>();
+    }
+
 }
