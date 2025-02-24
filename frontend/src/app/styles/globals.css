@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    /* 원하는 폰트 패밀리로 변경 */
+    font-family: "Pretendard", Arial, sans-serif;
+    color: #111111; /* 원하는 기본 텍스트 색상으로 변경 */
+    background-color: #ffffff; /* 배경색도 필요에 따라 설정 */
+    /* 또는 Google Fonts에서 가져온 폰트를 사용할 수도 있습니다. */
+  }
+}
