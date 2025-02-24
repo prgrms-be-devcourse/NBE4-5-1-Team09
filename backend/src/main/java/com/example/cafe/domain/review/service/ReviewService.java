@@ -2,11 +2,13 @@ package com.example.cafe.domain.review.service;
 
 import com.example.cafe.domain.item.entity.Item;
 import com.example.cafe.domain.item.repository.ItemRepository;
+import com.example.cafe.domain.item.service.ItemService;
 import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.domain.member.repository.MemberRepository;
 import com.example.cafe.domain.review.entity.Review;
 import com.example.cafe.domain.review.entity.ReviewSortType;
 import com.example.cafe.domain.review.repository.ReviewRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.dao.DataAccessException;
@@ -16,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ReviewService {
 
     @Autowired
@@ -27,7 +30,10 @@ public class ReviewService {
     @Autowired
     private MemberRepository memberRepository;
 
+    private final ItemService itemService;
+
     // 리뷰 작성
+    @Transactional
     public Review createReview(Long memberId, Long itemId, String reviewContent, Double rating) {
         if (reviewContent == null || reviewContent.trim().isEmpty() || rating == null) {
             throw new IllegalArgumentException("리뷰 내용과 평점은 필수 항목입니다.");
@@ -46,12 +52,14 @@ public class ReviewService {
         review.setCreatedAt(LocalDateTime.now());
         review.setModifiedAt(LocalDateTime.now());
 
-        updateItemAverageRating(review.getItem().getId());
+        Review savedReview = reviewRepository.save(review);
+        itemService.getAverageRating(itemId);
 
-        return reviewRepository.save(review);
+        return savedReview;
     }
 
     // 리뷰 수정
+    @Transactional
     public Review updateReview(Long reviewId, String reviewContent, Double rating) {
         if (reviewContent == null || reviewContent.trim().isEmpty() || rating == null) {
             throw new IllegalArgumentException("리뷰 내용과 평점은 필수 항목입니다.");
@@ -64,12 +72,14 @@ public class ReviewService {
         review.setRating(rating);
         review.setModifiedAt(LocalDateTime.now());
 
-        updateItemAverageRating(review.getItem().getId());
+        Review updatedReview = reviewRepository.save(review);
+        itemService.getAverageRating(review.getItem().getId());
 
-        return reviewRepository.save(review);
+        return updatedReview;
     }
 
     // 리뷰 삭제
+    @Transactional
     public void deleteReview(Long reviewId) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("Review not found"));
@@ -77,7 +87,7 @@ public class ReviewService {
         Long itemId = review.getItem().getId();
         reviewRepository.delete(review);
 
-        updateItemAverageRating(itemId);
+        itemService.getAverageRating(itemId);
     }
 
     // 상품별 리뷰 조회 (수동 재시도 3번)
@@ -115,38 +125,22 @@ public class ReviewService {
         throw new IllegalArgumentException("상품별 리뷰 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
 
-    // 평균 평점 조회 (수동 재시도 3번)
-    public Double getAverageRating(Long itemId) {
-        int maxAttempts = 3;
-        int attempt = 0;
-        while (attempt < maxAttempts) {
-            try {
-                return reviewRepository.findAverageRatingByItem_Id(itemId);
-            } catch (DataAccessException e) {
-                attempt++;
-                if (attempt >= maxAttempts) {
-                    throw new IllegalArgumentException("평균 평점 조회 중 오류가 발생했습니다. 다시 시도해주세요.", e);
-                }
-            }
-        }
-        throw new IllegalArgumentException("평균 평점 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
-    }
-
-    // 상품별 평균 평점 설정
-    @Transactional
-    public void updateItemAverageRating(Long itemId) {
-
-        Double avgRating = getAverageRating(itemId);
-        Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 아이템이 존재하지 않습니다."));
-
-        if (avgRating == null) {
-            avgRating = 0.0;
-        }
-
-        item.setAvgRating(avgRating);
-        itemRepository.save(item);
-    }
+//    // 평균 평점 조회 (수동 재시도 3번)
+//    public Double getAverageRating(Long itemId) {
+//        int maxAttempts = 3;
+//        int attempt = 0;
+//        while (attempt < maxAttempts) {
+//            try {
+//                return reviewRepository.findAverageRatingByItem_Id(itemId);
+//            } catch (DataAccessException e) {
+//                attempt++;
+//                if (attempt >= maxAttempts) {
+//                    throw new IllegalArgumentException("평균 평점 조회 중 오류가 발생했습니다. 다시 시도해주세요.", e);
+//                }
+//            }
+//        }
+//        throw new IllegalArgumentException("평균 평점 조회 중 오류가 발생했습니다. 다시 시도해주세요.");
+//    }
 
     // 전체 리뷰 조회 (수동 재시도 3번)
     public List<Review> findAllReviews() {

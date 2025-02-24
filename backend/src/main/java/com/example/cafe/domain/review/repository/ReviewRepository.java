@@ -13,7 +13,9 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findByItem_IdAndMember_IdNotOrderByRatingDesc(Long itemId, Long memberId);    // 평점 높은 순, 내 리뷰 제외
     List<Review> findByItem_IdAndMember_IdNotOrderByRatingAsc(Long itemId, Long memberId);
     @Query("SELECT AVG(r.rating) FROM Review r WHERE r.item.id = :itemId")
-    Double findAverageRatingByItem_Id(Long itemId);
+    Double findAverageRatingByItemId(Long itemId);
+//    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.item.id = :itemId")
+//    Double findAverageRatingByItem_Id(Long itemId);
     @Query("SELECT r FROM Review r WHERE r.item.id = :itemId AND r.member.id = :memberId")
     List<Review> findByItemIdAndMemberId(Long itemId, Long memberId);
 }
