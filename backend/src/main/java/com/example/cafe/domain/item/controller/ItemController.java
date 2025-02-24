@@ -11,9 +11,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @Tag(name = "Item API", description = "관리자에게는 상품에 대한 CRUD 기능을, 회원에게는 상품 조회 기능을 제공합니다.")
@@ -46,6 +49,17 @@ public class ItemController {
     }
 
     @CheckPermission("ADMIN")
+    @Operation(summary = "상품 생성(관리자만 가능) 이미지 기능 추가")
+    @PostMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ItemResponseDto> createItemImage(
+            @RequestPart("item") @Valid ItemRequestDto itemRequestDto,
+            @RequestPart("image") MultipartFile imageFile) throws IOException {
+
+        ItemResponseDto savedItem = itemService.createItemImage(itemRequestDto, imageFile);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedItem);
+    }
+
+    @CheckPermission("ADMIN")
     @Operation(summary = "상품 수정(관리자만 가능)")
     @PutMapping("/{id}")
     public ResponseEntity<ItemResponseDto> updateItem(@PathVariable Long id, @RequestBody @Valid ItemRequestDto itemRequestDto) {
@@ -55,11 +69,32 @@ public class ItemController {
     }
 
     @CheckPermission("ADMIN")
+    @Operation(summary = "상품 수정(관리자만 가능) 이미지 기능 추가")
+    @PutMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ItemResponseDto> updateItemImage(
+            @PathVariable Long id,
+            @RequestPart("item") @Valid ItemRequestDto itemRequestDto,
+            @RequestPart(value = "image", required = false) MultipartFile imageFile) throws IOException {
+
+        ItemResponseDto updatedItem = itemService.updateItemImage(id, itemRequestDto, imageFile);
+        return ResponseEntity.ok(updatedItem);
+    }
+
+    @CheckPermission("ADMIN")
     @Operation(summary = "상품 삭제(관리자만 가능)")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteItem(@PathVariable Long id) {
 
         itemService.deleteItem(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @CheckPermission("ADMIN")
+    @Operation(summary = "상품 삭제(관리자만 가능) 이미지 기능 추가")
+    @DeleteMapping("/{id}/image")
+    public ResponseEntity<Void> deleteItemImage(@PathVariable Long id) throws IOException {
+
+        itemService.deleteItemImage(id);
         return ResponseEntity.noContent().build();
     }
 

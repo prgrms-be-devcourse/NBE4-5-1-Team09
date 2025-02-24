@@ -10,6 +10,7 @@ import com.example.cafe.domain.review.repository.ReviewRepository;
 import com.example.cafe.global.exception.ItemNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,7 +34,9 @@ public class ItemService {
 
     private final ItemRepository itemRepository;
     private final ReviewRepository reviewRepository;
-    private String uploadDir = "src/main/resources/static/images";
+
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
     public void setImageDirectory(String directory) {
         this.uploadDir = directory;
@@ -61,6 +65,66 @@ public class ItemService {
         item.setCategory(itemRequestDto.getCategory());
         item.setAvgRating(0.0);
         item.setItemStatus(ItemStatus.ON_SALE);
+        item.autoCheckQuantityForSetStatus();
+
+        Item savedItem = itemRepository.save(item);
+
+        return new ItemResponseDto(savedItem);
+    }
+
+    @Transactional
+    public ItemResponseDto createItemImage(ItemRequestDto itemRequestDto, MultipartFile imageFile) throws IOException {
+
+        String imagePath = saveImage(imageFile);
+        itemRequestDto.setImagePath(imagePath);
+
+        // Item 엔티티 생성 및 저장
+        Item item = new Item();
+
+        item.setItemName(itemRequestDto.getItemName());
+        item.setPrice(itemRequestDto.getPrice());
+        item.setStock(itemRequestDto.getStock());
+        item.setImagePath(itemRequestDto.getImagePath());
+        item.setContent(itemRequestDto.getContent());
+        item.setCategory(itemRequestDto.getCategory());
+        item.setAvgRating(0.0);
+        item.setItemStatus(ItemStatus.ON_SALE);
+        item.autoCheckQuantityForSetStatus();
+
+        Item savedItem = itemRepository.save(item);
+
+        // 저장된 아이템 반환
+        return new ItemResponseDto(savedItem);
+    }
+
+    @Transactional
+    public ItemResponseDto updateItemImage(Long id, ItemRequestDto itemRequestDto, MultipartFile imageFile) throws IOException {
+
+        Item item = itemRepository.findById(id)
+                .orElseThrow(() -> new ItemNotFoundException(id));
+
+        // 기존 이미지 경로 유지
+        String imagePath = item.getImagePath();
+
+        // 새로운 이미지가 있을 경우
+        if (imageFile != null && !imageFile.isEmpty()) {
+            // 기존 이미지 삭제
+            if (imagePath != null) {
+                deleteImage(imagePath);
+            }
+
+            // 새 이미지 저장
+            imagePath = saveImage(imageFile);  // 새 이미지 저장 후 경로 반환
+        }
+
+        item.setItemName(itemRequestDto.getItemName());
+        item.setPrice(itemRequestDto.getPrice());
+        item.setStock(itemRequestDto.getStock());
+        item.setImagePath(imagePath);  // 새 이미지 경로 또는 기존 경로
+        item.setContent(itemRequestDto.getContent());
+        item.setCategory(itemRequestDto.getCategory());
+
+        item.autoCheckQuantityForSetStatus();  // 재고에 따른 상태 자동 설정
 
         Item savedItem = itemRepository.save(item);
 
@@ -90,6 +154,24 @@ public class ItemService {
         Item item = itemRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("상품이 존재하지 않습니다. id: " + id));
 
+        itemRepository.delete(item);
+    }
+
+    @Transactional
+    public void deleteItemImage(Long id) throws IOException {
+        // 상품 조회
+        Item item = itemRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("상품이 존재하지 않습니다. id: " + id));
+
+        // 상품에 연결된 이미지 파일 경로 가져오기
+        String imagePath = item.getImagePath();
+
+        // 상품에 이미지가 있으면 삭제
+        if (imagePath != null && !imagePath.trim().isEmpty()) {
+            deleteImage(imagePath);
+        }
+
+        // 상품 삭제
         itemRepository.delete(item);
     }
 
@@ -152,28 +234,40 @@ public class ItemService {
     }
 
     private String saveImage(MultipartFile imageFile) throws IOException {
-
-        Path uploadPath = Paths.get(uploadDir);
-
-        // 디렉토리가 없으면 생성
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
+        if (imageFile == null || imageFile.isEmpty()) {
+            return null; // 이미지가 없으면 null 반환
         }
 
-        // 원본 파일 이름에서 확장자 추출
-        String originalFileName = imageFile.getOriginalFilename();
-        String fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
+        // 디렉토리 생성 (없을 경우)
+        File directory = new File(uploadDir);
+        if (!directory.exists()) {
+            directory.mkdirs();
+        }
 
-        // UUID를 이용한 새로운 파일 이름 생성
-        String newFileName = UUID.randomUUID().toString() + fileExtension;
+        // 고유한 파일명 생성
+        String fileName = UUID.randomUUID().toString() + "_" + imageFile.getOriginalFilename();
+        Path filePath = Paths.get(uploadDir, fileName);
 
-        // 새로운 파일 경로 생성
-        Path filePath = uploadPath.resolve(newFileName);
-
-        // 파일 복사
+        // 이미지 저장
         Files.copy(imageFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-        // 저장된 파일의 경로 반환
-        return filePath.toString();
+        return "/images/" + fileName; // 저장된 파일의 상대 경로 반환
+    }
+
+    private void deleteImage(String imagePath) throws IOException {
+        if (imagePath == null || imagePath.trim().isEmpty()) {
+            return;
+        }
+
+        // "/images/" 로 시작하는 상대 경로에서 실제 파일명만 추출
+        String fileName = imagePath.substring(imagePath.lastIndexOf("/") + 1);
+
+        // 실제 파일 경로 생성
+        Path fullPath = Paths.get(uploadDir, fileName);
+        File file = fullPath.toFile();
+
+        if (file.exists() && !file.delete()) {
+            throw new IOException("이미지 파일 삭제 실패: " + fullPath);
+        }
     }
 }
