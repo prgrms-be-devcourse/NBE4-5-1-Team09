@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect } from "react";
-// import axios from "axios";  // 기존 axios import 제거
 import api from "../../lib/axios"; // 공통 axios 인스턴스 import
 import { useRouter } from "next/navigation";
 
@@ -16,8 +15,31 @@ interface Item {
   itemStatus: string;
 }
 
+interface JwtPayload {
+  authority: string;
+}
+
+/** 토큰 디코딩 (간단한 예시) */
+function decodeJwt(token: string): JwtPayload | null {
+  try {
+    const payloadPart = token.split(".")[1];
+    const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (err) {
+    console.error("JWT 디코딩 실패:", err);
+    return null;
+  }
+}
+
 export default function AdminPage() {
   const router = useRouter();
+
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
@@ -39,10 +61,31 @@ export default function AdminPage() {
   const [updateMessage, setUpdateMessage] = useState<string>("");
   const [deleteMessage, setDeleteMessage] = useState<string>("");
 
+  // 권한 검사 useEffect
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      // 토큰이 없다면 관리자 페이지 접근 불가 → 로그인 or 홈으로 이동
+      router.push("/");
+      return;
+    }
+
+    // 토큰 디코딩
+    const decoded = decodeJwt(token);
+    if (!decoded || decoded.authority !== "ADMIN") {
+      // 관리자 권한이 아니면 홈으로 이동
+      router.push("/");
+      return;
+    }
+
+    // 여기까지 왔다면 관리자 권한이 맞음 → 상품 목록 불러오기
+    fetchItems();
+  }, [router]);
+
   // 상품 목록 불러오기
   const fetchItems = async () => {
     try {
-      const response = await api.get("/items"); // <-- api 인스턴스 사용
+      const response = await api.get("/items");
       setItems(response.data);
       setLoading(false);
     } catch (err) {
@@ -51,15 +94,15 @@ export default function AdminPage() {
     }
   };
 
-  useEffect(() => {
-    fetchItems();
-  }, []);
-
   // 신규 상품 등록 처리
   const handleCreateItem = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        setError("인증되지 않았습니다.");
+        return;
+      }
       // price, stock은 Number로 변환
       const payload = {
         itemName: newItem.itemName,
@@ -92,6 +135,10 @@ export default function AdminPage() {
     if (!editingItem) return;
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        setError("인증되지 않았습니다.");
+        return;
+      }
       await api.put(`/items/${editingItem.id}`, editingItem, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -109,6 +156,10 @@ export default function AdminPage() {
   const handleDeleteItem = async (id: number) => {
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        setError("인증되지 않았습니다.");
+        return;
+      }
       await api.delete(`/items/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
