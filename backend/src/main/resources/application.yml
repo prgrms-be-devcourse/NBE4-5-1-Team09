@@ -12,16 +12,18 @@ spring:
       - "classpath:application-SECRET-KEY.yml"
       - "classpath:application-secret.yml"
   datasource:
-    url: jdbc:h2:./db_dev;MODE=MySQL
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
+    url: ${db.url}
+    username: ${db.username}
+    password: ${db.password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       auto-commit: false
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
+      dialect: org.hibernate.dialect.MySQL8Dialect
+
     show-sql: false
     properties:
       hibernate:
