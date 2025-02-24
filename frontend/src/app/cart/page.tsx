@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
-// import axios from "axios";  // 기존 axios 주석 처리
 import api from "../../lib/axios"; // 공통 axios 인스턴스
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface CartItem {
   itemId: number;
@@ -19,32 +19,24 @@ interface CartResponse {
 }
 
 export default function CartPage() {
+  const router = useRouter();
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  // 각 장바구니 항목의 수정된 수량을 저장할 state (itemId를 key로 사용)
+  const [error, setError] = useState<string>("");
   const [quantities, setQuantities] = useState<{ [key: number]: number }>({});
 
-  // 장바구니 정보 불러오기
   const fetchCart = async () => {
     try {
-      // localStorage에서 액세스 토큰 추출
       const token = localStorage.getItem("token");
       if (!token) {
         setError("로그인이 필요합니다.");
         setLoading(false);
         return;
       }
-
-      // 공통 axios(api) 사용
       const response = await api.get("/cart", {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       setCart(response.data);
-
-      // 각 항목의 수량 초기화
       const initQuantities: { [key: number]: number } = {};
       response.data.items.forEach((item: CartItem) => {
         initQuantities[item.itemId] = item.quantity;
@@ -52,8 +44,12 @@ export default function CartPage() {
       setQuantities(initQuantities);
       setLoading(false);
     } catch (err: any) {
-      // err.response?.data가 객체일 수도 있으므로 대비
-      setError(err.response?.data || "장바구니 정보를 불러오지 못했습니다.");
+      const errorData = err.response?.data;
+      setError(
+        typeof errorData === "object"
+          ? JSON.stringify(errorData)
+          : errorData || "장바구니 정보를 불러오지 못했습니다."
+      );
       setLoading(false);
     }
   };
@@ -62,15 +58,6 @@ export default function CartPage() {
     fetchCart();
   }, []);
 
-  // 수량 입력 필드 값 변경
-  const handleQuantityChange = (itemId: number, value: number) => {
-    setQuantities((prev) => ({
-      ...prev,
-      [itemId]: value,
-    }));
-  };
-
-  // 장바구니 항목의 수량 수정 함수
   const handleUpdateCart = async (itemId: number) => {
     try {
       const token = localStorage.getItem("token");
@@ -79,18 +66,48 @@ export default function CartPage() {
         return;
       }
       const newQuantity = quantities[itemId];
-
       await api.post(
         "/cart/edit",
         { itemId, quantity: newQuantity },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       alert("수량이 수정되었습니다.");
       fetchCart();
     } catch (err: any) {
-      alert(err.response?.data || "수정에 실패했습니다.");
+      const errorData = err.response?.data;
+      alert(
+        typeof errorData === "object"
+          ? JSON.stringify(errorData)
+          : errorData || "수정에 실패했습니다."
+      );
+    }
+  };
+
+  // 장바구니 주문 후 결제 선택 페이지로 이동
+  const handleCartOrder = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("로그인이 필요합니다.");
+        router.push("/login");
+        return;
+      }
+      const response = await api.post("/order/cart", null, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      // OrderResponseDto에는 tradeUUID와 totalPrice가 포함됨
+      const { tradeUUID, totalPrice } = response.data;
+      // PaymentSelectionPage로 이동 (쿼리 파라미터로 전달)
+      router.push(
+        `/payment/select?tradeUUID=${tradeUUID}&totalPrice=${totalPrice}`
+      );
+    } catch (err: any) {
+      const errorData = err.response?.data;
+      alert(
+        typeof errorData === "object"
+          ? JSON.stringify(errorData)
+          : errorData || "주문에 실패했습니다."
+      );
     }
   };
 
@@ -136,12 +153,12 @@ export default function CartPage() {
                         id={`quantity-${item.itemId}`}
                         type="number"
                         min="0"
-                        value={quantities[item.itemId] || 0}
+                        value={quantities[item.itemId] ?? 1}
                         onChange={(e) =>
-                          handleQuantityChange(
-                            item.itemId,
-                            parseInt(e.target.value, 10)
-                          )
+                          setQuantities((prev) => ({
+                            ...prev,
+                            [item.itemId]: parseInt(e.target.value, 10),
+                          }))
                         }
                         className="border rounded p-1 w-12 text-sm"
                       />
@@ -154,6 +171,14 @@ export default function CartPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+              <div className="mt-8 flex justify-end">
+                <button
+                  onClick={handleCartOrder}
+                  className="bg-green-500 text-white px-6 py-2 rounded"
+                >
+                  결제하기
+                </button>
               </div>
             </div>
           )
