@@ -3,11 +3,15 @@ package com.example.cafe.domain.item.service;
 import com.example.cafe.domain.item.dto.ItemRequestDto;
 import com.example.cafe.domain.item.dto.ItemResponseDto;
 import com.example.cafe.domain.item.entity.Item;
+import com.example.cafe.domain.item.entity.ItemCategory;
 import com.example.cafe.domain.item.entity.ItemStatus;
 import com.example.cafe.domain.item.repository.ItemRepository;
 import com.example.cafe.global.exception.ItemNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,6 +23,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -84,6 +89,50 @@ public class ItemService {
                 .orElseThrow(() -> new EntityNotFoundException("상품이 존재하지 않습니다. id: " + id));
 
         itemRepository.delete(item);
+    }
+
+    public List<ItemResponseDto> searchItems(String keyword, ItemCategory category, Integer minPrice, Integer maxPrice, int page, int size) {
+
+        // 기본값 설정 (null이면 0 또는 최대값)
+        int safeMinPrice = (minPrice != null) ? minPrice : 0;
+        int safeMaxPrice = (maxPrice != null) ? maxPrice : Integer.MAX_VALUE;
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        return itemRepository.searchItems(keyword, category, minPrice, maxPrice, ItemStatus.ON_SALE, pageable)
+                .stream()
+                .map(ItemResponseDto::new)
+                .collect(Collectors.toList());
+    }
+
+    public List<ItemResponseDto> getItemsByCategory(ItemCategory category, int page, int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        return itemRepository.findByCategory(category, pageable)
+                .stream()
+                .map(ItemResponseDto::new)
+                .collect(Collectors.toList());
+    }
+
+    public List<ItemResponseDto> getItemsByStatus(ItemStatus status, int page, int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        return itemRepository.findByItemStatus(status, pageable)
+                .stream()
+                .map(ItemResponseDto::new)
+                .collect(Collectors.toList());
+    }
+
+    public List<ItemResponseDto> getTopRatedItems(int limit) {
+
+        Pageable pageable = PageRequest.of(0, limit, Sort.by("avgRating").descending());
+
+        return itemRepository.findByItemStatus(ItemStatus.ON_SALE, pageable)
+                .stream()
+                .map(ItemResponseDto::new)
+                .collect(Collectors.toList());
     }
 
     private String saveImage(MultipartFile imageFile) throws IOException {
