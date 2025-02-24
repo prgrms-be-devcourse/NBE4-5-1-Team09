@@ -69,9 +69,9 @@ public class UserTradeServiceLoadTest {
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    OrderRequestItemDto dto = new OrderRequestItemDto(finalMember.getId(), finalItem.getId(), 1);
+                    OrderRequestItemDto dto = new OrderRequestItemDto(finalItem.getId(), 1);
                     try {
-                        OrderResponseDto response = userTradeRedisLockService.tradeWithItemInfo(dto);
+                        OrderResponseDto response = userTradeRedisLockService.tradeWithItemInfo(finalMember.getId(), dto);
                         successCount.incrementAndGet();
                     } catch (Exception e) {
                         failureCount.incrementAndGet();

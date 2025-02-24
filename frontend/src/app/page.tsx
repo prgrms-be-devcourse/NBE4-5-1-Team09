@@ -1,100 +1,177 @@
-import Image from "next/image";
+"use client";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import axios from "axios";
 
-export default function Home() {
+interface Product {
+  id: number;
+  itemName: string;
+  content: string;
+  imagePath: string;
+  price: number;
+  stock: number;
+  category: string;
+  avgRating: number | null;
+  itemStatus: string;
+}
+
+export default function HomePage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // 각 상품의 수량을 관리하는 state (상품 id를 key로 사용)
+  const [quantities, setQuantities] = useState<{ [key: number]: number }>({});
+
+  // 메인 페이지 추천 상품은 전체 상품 목록을 불러온 후, 평균 평점 순(내림차순)으로 정렬합니다.
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const res = await fetch("http://localhost:8080/items");
+        if (!res.ok) throw new Error("상품 목록을 불러오지 못했습니다.");
+        const data: Product[] = await res.json();
+        // 평균 평점 순(내림차순)으로 정렬, null은 0으로 취급
+        const sorted = [...data].sort((a, b) => {
+          const ratingA = a.avgRating ?? 0;
+          const ratingB = b.avgRating ?? 0;
+          return ratingB - ratingA;
+        });
+        setProducts(sorted);
+        // 초기 수량을 각 상품마다 1로 설정
+        const initQuantities: { [key: number]: number } = {};
+        sorted.forEach((product) => {
+          initQuantities[product.id] = 1;
+        });
+        setQuantities(initQuantities);
+        setLoading(false);
+      } catch (err: any) {
+        setError(err.message);
+        setLoading(false);
+      }
+    }
+    fetchProducts();
+  }, []);
+
+  // 수량 입력 필드 변경 시 호출되는 함수
+  const handleQuantityChange = (productId: number, value: number) => {
+    setQuantities((prev) => ({
+      ...prev,
+      [productId]: value,
+    }));
+  };
+
+  // 장바구니에 상품 추가하는 함수 (axios 사용)
+  const handleAddToCart = async (product: Product) => {
+    // 입력한 수량과 상품 재고 비교
+    const quantity = quantities[product.id] || 1;
+    if (quantity > product.stock) {
+      alert("재고가 부족합니다.");
+      return;
+    }
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(
+        "http://localhost:8080/cart/add",
+        { itemId: product.id, quantity },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("장바구니에 상품이 추가되었습니다.");
+    } catch (err: any) {
+      alert(err.response?.data || "장바구니 추가에 실패했습니다.");
+    }
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="min-h-screen bg-gray-100">
+      {/* Hero Section */}
+      <section className="bg-white py-12">
+        <div className="container mx-auto text-center">
+          <h2 className="text-4xl font-bold mb-4">최고의 상품을 만나보세요!</h2>
+          <p className="text-lg text-gray-600 mb-8">
+            다양한 상품과 특별한 할인 혜택이 기다리고 있습니다.
+          </p>
+          <Link
+            href="/products"
+            className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition-colors"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            지금 쇼핑하기
+          </Link>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      </section>
+
+      {/* 추천 상품 Section */}
+      <section className="py-12">
+        <div className="container mx-auto">
+          <h3 className="text-3xl font-bold mb-6">추천 상품</h3>
+          {loading ? (
+            <div className="text-center">상품 로딩 중...</div>
+          ) : error ? (
+            <div className="text-center text-red-500">{error}</div>
+          ) : products.length === 0 ? (
+            <div className="text-center">등록된 상품이 없습니다.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {products.map((product) => (
+                <div key={product.id} className="bg-white p-4 rounded shadow">
+                  <img
+                    src={product.imagePath}
+                    alt={product.itemName}
+                    className="w-full h-48 object-cover mb-4"
+                  />
+                  <h4 className="text-xl font-bold mb-2">{product.itemName}</h4>
+                  <p className="text-gray-600 mb-2">{product.content}</p>
+                  <p className="text-lg font-bold mb-2">
+                    가격: {product.price}
+                  </p>
+                  <p className="text-yellow-500 mb-2">
+                  평점: {product.avgRating ? product.avgRating.toFixed(1) : "-"}
+                  </p>
+                  {/* 수량 입력 필드 */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <label
+                      htmlFor={`quantity-${product.id}`}
+                      className="font-medium text-sm"
+                    >
+                      수량:
+                    </label>
+                    <input
+                      id={`quantity-${product.id}`}
+                      type="number"
+                      min="1"
+                      value={quantities[product.id] || 1}
+                      onChange={(e) =>
+                        handleQuantityChange(
+                          product.id,
+                          parseInt(e.target.value, 10)
+                        )
+                      }
+                      className="border rounded p-1 w-12 text-sm"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2 mt-4">
+                    <Link
+                      href={`/products/${product.id}`}
+                      className="text-blue-600 hover:underline"
+                    >
+                      자세히 보기
+                    </Link>
+                    <button
+                      onClick={() => handleAddToCart(product)}
+                      className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 text-sm"
+                    >
+                      장바구니 담기
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-800 text-white p-4 text-center">
+        © {new Date().getFullYear()} 카페. All rights reserved.
       </footer>
     </div>
   );
