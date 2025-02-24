@@ -6,6 +6,7 @@ import com.example.cafe.domain.item.entity.Item;
 import com.example.cafe.domain.item.entity.ItemCategory;
 import com.example.cafe.domain.item.entity.ItemStatus;
 import com.example.cafe.domain.item.repository.ItemRepository;
+import com.example.cafe.domain.review.repository.ReviewRepository;
 import com.example.cafe.global.exception.ItemNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 public class ItemService {
 
     private final ItemRepository itemRepository;
+    private final ReviewRepository reviewRepository;
     private String uploadDir = "src/main/resources/static/images";
 
     public void setImageDirectory(String directory) {
@@ -133,6 +135,20 @@ public class ItemService {
                 .stream()
                 .map(ItemResponseDto::new)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Double getAverageRating(Long itemId) {
+
+        Double avgRating = reviewRepository.findAverageRatingByItemId(itemId);
+
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new EntityNotFoundException("상품이 존재하지 않습니다. id: " + itemId));
+
+        item.setAvgRating(avgRating);
+        itemRepository.save(item);
+
+        return avgRating;
     }
 
     private String saveImage(MultipartFile imageFile) throws IOException {
