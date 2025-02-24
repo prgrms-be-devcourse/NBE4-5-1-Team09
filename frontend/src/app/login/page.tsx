@@ -102,12 +102,6 @@ export default function LoginPage() {
               비밀번호 재설정
             </Link>
           </p>
-          <p className="mt-4">
-            관리자로 로그인하시겠습니까?{" "}
-            <Link href="/login/admin" className="text-blue-500 hover:underline">
-              관리자로 로그인하기
-            </Link>
-          </p>
           <p className="mt-2">
             관리자로 회원가입하시겠습니까?{" "}
             <Link
