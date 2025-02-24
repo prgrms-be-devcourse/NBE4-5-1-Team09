@@ -1,5 +1,6 @@
 package com.example.cafe.domain.review.controller;
 
+import com.example.cafe.domain.item.service.ItemService;
 import com.example.cafe.domain.review.dto.ReviewRequestDto;
 import com.example.cafe.domain.review.dto.ReviewResponseDto;
 import com.example.cafe.domain.review.entity.Review;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 public class ReviewController {
 
     private final ReviewService reviewService;
+    private final ItemService itemService;
 
     @Operation(summary = "리뷰 작성", description = "회원이 특정 상품에 대해 리뷰를 작성합니다.")
     @PostMapping("/create")
@@ -80,7 +82,7 @@ public class ReviewController {
     @GetMapping("/average/{itemId}")
     public ResponseEntity<Double> getAverageRating(
             @Parameter(description = "상품 ID", example = "1") @PathVariable Long itemId) {
-        return ResponseEntity.ok(reviewService.getAverageRating(itemId));
+        return ResponseEntity.ok(itemService.getAverageRating(itemId));
     }
 
     @Operation(summary = "전체 리뷰 조회 (관리자용)", description = "모든 리뷰를 조회하는 관리자용 API입니다.")

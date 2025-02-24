@@ -1,6 +1,7 @@
 package com.example.cafe.domain.review.controller;
 
 import com.example.cafe.domain.item.entity.Item;
+import com.example.cafe.domain.item.service.ItemService;
 import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.domain.review.dto.ReviewRequestDto;
 import com.example.cafe.domain.review.entity.Review;
@@ -35,6 +36,9 @@ public class ReviewControllerTest {
 
     @Mock
     private ReviewService reviewService;
+
+    @Mock
+    private ItemService itemService;
 
     @InjectMocks
     private ReviewController reviewController;
@@ -121,7 +125,7 @@ public class ReviewControllerTest {
 
     @Test
     public void testGetAverageRating() throws Exception {
-        when(reviewService.getAverageRating(1L)).thenReturn(4.0);
+        when(itemService.getAverageRating(1L)).thenReturn(4.0);
 
         mockMvc.perform(get("/reviews/average/1"))
                 .andExpect(status().isOk())
