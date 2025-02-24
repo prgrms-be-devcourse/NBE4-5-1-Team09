@@ -72,9 +72,9 @@ public class UserTradeServiceTest {
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    OrderRequestItemDto dto = new OrderRequestItemDto(finalMember.getId(), finalItem.getId(), 1);
+                    OrderRequestItemDto dto = new OrderRequestItemDto(finalItem.getId(), 1);
                     try {
-                        OrderResponseDto response = userTradeService.tradeWithItemInfo(dto);
+                        OrderResponseDto response = userTradeService.tradeWithItemInfo(finalMember.getId(), dto);
                         successCount.incrementAndGet();
                     } catch (Exception e) {
                         failureCount.incrementAndGet();

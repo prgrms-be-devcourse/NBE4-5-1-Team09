@@ -42,6 +42,7 @@ out/
 ### custom ###
 db_dev.mv.db
 application-secret.yml
+application-SECRET-KEY.yml
 
 db_dev.mv.db
 db_dev.trace.db
