@@ -1,10 +1,9 @@
-// src/app/login/page.tsx
 "use client";
 import React, { useState } from "react";
-import axios from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../context/AuthContext";
+import api from "../../lib/axios"; // <-- 우리가 만든 axios 인스턴스 import
 
 export default function LoginPage() {
   const { setToken } = useAuth();
@@ -16,11 +15,17 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axios.post("/member/login", { email, password });
+      // 기존 axios.post("/member/login", ...) 대신 인스턴스 사용
+      const response = await api.post("/member/login", { email, password });
       const { token, email: returnedEmail } = response.data;
-      // 전역 상태 업데이트
+
+      // 전역 AuthContext에 액세스 토큰 저장
       setToken(token);
+
+      // 이메일 등 필요한 정보는 localStorage 등에 저장할 수도 있음
       localStorage.setItem("email", returnedEmail);
+
+      // 로그인 성공 후 메인 페이지로 이동
       router.push("/");
     } catch (err: any) {
       let errMsg = "로그인 실패";

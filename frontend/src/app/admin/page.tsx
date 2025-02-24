@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+// import axios from "axios";  // 기존 axios import 제거
+import api from "../../lib/axios"; // 공통 axios 인스턴스 import
 import { useRouter } from "next/navigation";
 
 interface Item {
@@ -10,7 +11,7 @@ interface Item {
   stock: number;
   imagePath: string;
   content: string;
-  category: string; // 백엔드의 enum 값 ("ARABICA", "ROBUSTA", "LIBERICA", "DECAF")
+  category: string; // 백엔드 enum: "ARABICA", "ROBUSTA", "LIBERICA", "DECAF"
   avgRating: number | null;
   itemStatus: string;
 }
@@ -21,7 +22,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
 
-  // 신규 상품 등록 폼 상태 (가격, 재고는 임시 문자열로 관리)
+  // 신규 상품 등록 폼 상태
   const [newItem, setNewItem] = useState({
     itemName: "",
     price: "",
@@ -34,14 +35,14 @@ export default function AdminPage() {
   // 수정 중인 상품 상태 (null이면 수정 모드 아님)
   const [editingItem, setEditingItem] = useState<Item | null>(null);
 
-  // 성공 메시지 상태
+  // 메시지 상태
   const [updateMessage, setUpdateMessage] = useState<string>("");
   const [deleteMessage, setDeleteMessage] = useState<string>("");
 
   // 상품 목록 불러오기
   const fetchItems = async () => {
     try {
-      const response = await axios.get("http://localhost:8080/items");
+      const response = await api.get("/items"); // <-- api 인스턴스 사용
       setItems(response.data);
       setLoading(false);
     } catch (err) {
@@ -68,7 +69,7 @@ export default function AdminPage() {
         content: newItem.content,
         category: newItem.category,
       };
-      await axios.post("http://localhost:8080/items", payload, {
+      await api.post("/items", payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNewItem({
@@ -91,13 +92,9 @@ export default function AdminPage() {
     if (!editingItem) return;
     try {
       const token = localStorage.getItem("token");
-      await axios.put(
-        `http://localhost:8080/items/${editingItem.id}`,
-        editingItem,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await api.put(`/items/${editingItem.id}`, editingItem, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setUpdateMessage("수정이 완료되었습니다.");
       setEditingItem(null);
       fetchItems();
@@ -112,7 +109,7 @@ export default function AdminPage() {
   const handleDeleteItem = async (id: number) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:8080/items/${id}`, {
+      await api.delete(`/items/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setDeleteMessage("삭제가 완료되었습니다.");

@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+// import axios from "axios";  // 기존 axios 대신
+import api from "../../lib/axios"; // 공통 axios 인스턴스 import
 
 interface Product {
   id: number;
@@ -34,29 +36,24 @@ export default function HomePage() {
       if (category) params.append("category", category);
       if (minPrice) params.append("minPrice", minPrice);
       if (maxPrice) params.append("maxPrice", maxPrice);
-      // 백엔드에 sort 파라미터 전달해도 무시되므로, 클라이언트에서 정렬 처리
       if (sort) params.append("sort", sort);
-      // page와 size 기본값
       params.append("page", "0");
       params.append("size", "10");
 
-      // 백틱(``)을 사용하여 문자열 보간 처리
+      // 상품 목록은 기존 fetch로
       const res = await fetch(
         `http://localhost:8080/items/search?${params.toString()}`
       );
       if (!res.ok) throw new Error("상품 목록을 불러오지 못했습니다.");
       const data: Product[] = await res.json();
 
-      // 클라이언트 측 정렬 처리
+      // 클라이언트 측 정렬(옵션)
       let sortedData = data;
       if (sort) {
         sortedData = [...data].sort((a, b) => {
-          if (sort === "priceAsc") {
-            return a.price - b.price;
-          } else if (sort === "priceDesc") {
-            return b.price - a.price;
-          } else if (sort === "ratingDesc") {
-            // avgRating이 null인 경우 0으로 취급
+          if (sort === "priceAsc") return a.price - b.price;
+          else if (sort === "priceDesc") return b.price - a.price;
+          else if (sort === "ratingDesc") {
             const ratingA = a.avgRating ?? 0;
             const ratingB = b.avgRating ?? 0;
             return ratingB - ratingA;
@@ -73,7 +70,7 @@ export default function HomePage() {
     }
   };
 
-  // 초기 상품 목록 호출 (검색 조건 없을 때)
+  // 첫 로딩 시 상품 목록 호출
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -82,6 +79,29 @@ export default function HomePage() {
     e.preventDefault();
     setLoading(true);
     fetchProducts();
+  };
+
+  // 장바구니에 상품 추가하는 함수 (공통 axios 인스턴스 사용)
+  const handleAddToCart = async (productId: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("로그인이 필요합니다.");
+        return;
+      }
+
+      await api.post(
+        "/cart/add",
+        { itemId: productId, quantity: 1 },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      alert("장바구니에 상품이 추가되었습니다.");
+    } catch (err: any) {
+      const errorMsg = err.response?.data || "장바구니 추가에 실패했습니다.";
+      setError(errorMsg);
+      alert(errorMsg);
+    }
   };
 
   return (
@@ -194,12 +214,20 @@ export default function HomePage() {
                   <p className="text-yellow-500">
                     평점: {product.avgRating ?? "-"}
                   </p>
-                  <Link
-                    href={`/products/${product.id}`}
-                    className="text-blue-600 hover:underline"
-                  >
-                    자세히 보기
-                  </Link>
+                  <div className="flex flex-col gap-2 mt-4">
+                    <Link
+                      href={`/products/${product.id}`}
+                      className="text-blue-600 hover:underline"
+                    >
+                      자세히 보기
+                    </Link>
+                    <button
+                      onClick={() => handleAddToCart(product.id)}
+                      className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                    >
+                      장바구니 담기
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

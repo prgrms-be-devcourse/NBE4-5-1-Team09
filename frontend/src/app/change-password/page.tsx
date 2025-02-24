@@ -1,8 +1,8 @@
-// src/app/change-password/page.tsx
 "use client";
 import React, { useState } from "react";
-import axios from "axios";
 import { useRouter } from "next/navigation";
+// import axios from "axios"; // 기존 axios 주석 처리
+import api from "../../lib/axios"; // 공통 axios 인스턴스
 import Link from "next/link";
 
 export default function ChangePasswordPage() {
@@ -15,11 +15,18 @@ export default function ChangePasswordPage() {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
+      if (!token) {
+        setError("로그인이 필요합니다.");
+        return;
+      }
+
+      // 공통 axios 인스턴스(api) 사용
+      await api.post(
         "/member/change-password",
         { oldPassword, newPassword },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      // 성공 시 프로필 페이지로 이동
       router.push("/profile");
     } catch (err: any) {
       setError(err.response?.data || "비밀번호 변경 실패");

@@ -3,6 +3,9 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    color-scheme: light;
+  }
   body {
     /* 원하는 폰트 패밀리로 변경 */
     font-family: "Pretendard", Arial, sans-serif;
