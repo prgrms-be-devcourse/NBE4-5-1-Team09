@@ -9,6 +9,7 @@ import com.example.cafe.domain.trade.domain.dto.request.CancelRequestDto;
 import com.example.cafe.domain.trade.domain.dto.request.OrderRequestItemDto;
 import com.example.cafe.domain.trade.domain.dto.response.CancelResponseDto;
 import com.example.cafe.domain.trade.domain.dto.response.OrderResponseDto;
+import com.example.cafe.domain.trade.domain.dto.response.OrdersResponseDto;
 import com.example.cafe.domain.trade.domain.entity.CartItem;
 import com.example.cafe.domain.trade.domain.entity.Trade;
 import com.example.cafe.domain.trade.domain.entity.TradeItem;
@@ -29,6 +30,7 @@ import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import static com.example.cafe.domain.trade.domain.dto.response.OrdersResponseDto.*;
 import static com.example.cafe.domain.trade.domain.entity.TradeStatus.*;
 
 @Service
@@ -43,9 +45,8 @@ public class UserTradeAtomicUpdateService {
 
     // 단일 상품 주문: 원자적 업데이트 쿼리를 사용하여 재고를 감소하고 주문 생성
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public OrderResponseDto tradeWithItemInfo(OrderRequestItemDto requestItemDto) {
-        Member member = memberRepository.findById(requestItemDto.getMemberId())
-                .orElseThrow(() -> new RuntimeException("멤버를 찾을 수 없습니다"));
+    public OrderResponseDto tradeWithItemInfo(Long memberId, OrderRequestItemDto requestItemDto) {
+        Member member = getMember(memberId);
 
         int reqQuantity = requestItemDto.getQuantity();
         if (reqQuantity < 0) {
@@ -96,8 +97,7 @@ public class UserTradeAtomicUpdateService {
     // 장바구니 주문: 각 상품에 대해 원자적 업데이트 쿼리를 사용하여 재고 차감을 진행
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public OrderResponseDto tradeWithCart(Long memberId) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new RuntimeException("멤버를 찾을 수 없습니다"));
+        Member member = getMember(memberId);
         List<CartItem> cartItems;
         try {
             cartItems = member.getCart().getCartItems();
@@ -171,6 +171,52 @@ public class UserTradeAtomicUpdateService {
                 trade.getTradeUUID()
         );
     }
+
+
+    //사용자 주문 전체 조회
+    public OrdersResponseDto showAllTradeItems(Long memberId) {
+        Member member = getMember(memberId);
+        List<Trade> trades = member.getTrades();
+        OrdersResponseDto response = new OrdersResponseDto();
+        for (Trade trade : trades) {
+            List<TradeItem> tradeItems = trade.getTradeItems();
+            for (TradeItem tradeItem : tradeItems) {
+                OrderItemsDto itemDto = new OrderItemsDto(tradeItem.getItem().getId(), tradeItem.getQuantity(), tradeItem.getItem().getItemName());
+                if (trade.getTradeStatus().equals(BUY)) {
+                    response.getBuyList().add(itemDto);
+                }
+                if (trade.getTradeStatus().equals(PAY)) {
+                    response.getPayList().add(itemDto);
+                }
+                if (trade.getTradeStatus().equals(PREPARE_DELIVERY)) {
+                    response.getPrepareDeliveryList().add(itemDto);
+                }
+                if (trade.getTradeStatus().equals(BEFORE_DELIVERY)) {
+                    response.getBeforeDeliveryList().add(itemDto);
+                }
+                if (trade.getTradeStatus().equals(IN_DELIVERY)) {
+                    response.getInDeliveryList().add(itemDto);
+                }
+                if (trade.getTradeStatus().equals(POST_DELIVERY)) {
+                    response.getPostDeliveryList().add(itemDto);
+                }
+                if (trade.getTradeStatus().equals(REFUSED)) {
+                    response.getRefusedList().add(itemDto);
+                }
+                if (trade.getTradeStatus().equals(REFUND)) {
+                    response.getRefundList().add(itemDto);
+                }
+            }
+        }
+        return response;
+    }
+
+    private Member getMember(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("멤버를 찾을 수 없습니다"));
+        return member;
+    }
+
 
     public void processPayment(String uuid, int payAmount) {
         Trade trade = tradeRepository.findByTradeUUID(uuid)
