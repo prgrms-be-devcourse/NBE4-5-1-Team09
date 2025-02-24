@@ -12,18 +12,16 @@ spring:
       - "classpath:application-SECRET-KEY.yml"
       - "classpath:application-secret.yml"
   datasource:
-    url: ${db.url}
-    username: ${db.username}
-    password: ${db.password}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:h2:./db_dev;MODE=MySQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
     hikari:
       auto-commit: false
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: update
-      dialect: org.hibernate.dialect.MySQL8Dialect
-
+      ddl-auto: create-drop
     show-sql: false
     properties:
       hibernate:
@@ -46,6 +44,3 @@ custom:
 
 file:
   upload-dir: src/main/resources/static/images
-
-redisson:
-  address: "redis://127.0.0.1:6379"
