@@ -26,7 +26,7 @@ public class Cart {
     private Member member;
 
     // 장바구니는 여러 CartItem을 가짐 (1:N)
-    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL)
     private List<CartItem> cartItems = new ArrayList<>();
 
     private int totalPrice;
