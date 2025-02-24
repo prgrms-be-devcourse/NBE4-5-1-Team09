@@ -36,12 +36,14 @@ public class Item {
     private String content;
 
     @Column(name = "category")
+    @Enumerated(EnumType.STRING)
     private ItemCategory category;
 
     @Column(name = "avg_rating")
     private Double avgRating;
 
     @Column(name = "item_status", nullable = false)
+    @Enumerated(EnumType.STRING)
     private ItemStatus itemStatus;
 
 //    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)

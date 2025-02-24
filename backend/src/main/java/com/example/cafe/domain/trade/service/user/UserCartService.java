@@ -5,6 +5,7 @@ import com.example.cafe.domain.item.entity.ItemStatus;
 import com.example.cafe.domain.item.repository.ItemRepository;
 import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.domain.member.repository.MemberRepository;
+import com.example.cafe.domain.member.service.AuthTokenService;
 import com.example.cafe.domain.trade.domain.dto.request.ItemCartRequestDto;
 import com.example.cafe.domain.trade.domain.dto.response.CartListResponseDto;
 import com.example.cafe.domain.trade.domain.dto.response.ItemCartResponseDto;
@@ -46,8 +47,8 @@ public class UserCartService {
         return response;
     }
 
-    public ItemCartResponseDto addItemToCart(ItemCartRequestDto addItem) {
-        Cart cart = getCart(addItem.getMemberId());
+    public ItemCartResponseDto addItemToCart(Long memberId,ItemCartRequestDto addItem) {
+        Cart cart = getCart(memberId);
 
         Item item = itemRepository.findById(addItem.getItemId()).orElseThrow(() -> new RuntimeException("해당 아이템을 찾을 수 없어 카트에 추가하지 못하였습니다."));
         if (item.getItemStatus().equals(ItemStatus.SOLD_OUT) || item.getStock() == 0) {
@@ -78,8 +79,8 @@ public class UserCartService {
 
 
 
-    public ItemCartResponseDto editItemToCart(ItemCartRequestDto editItem) {
-        Cart cart = getCart(editItem.getMemberId());
+    public ItemCartResponseDto editItemToCart(Long memberId, ItemCartRequestDto editItem) {
+        Cart cart = getCart(memberId);
 
         Item item = itemRepository.findById(editItem.getItemId())
                 .orElseThrow(() -> new RuntimeException("해당 아이템을 찾을 수 없어 카트에 수정하지 못하였습니다."));

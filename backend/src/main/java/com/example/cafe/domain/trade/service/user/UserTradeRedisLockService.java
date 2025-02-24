@@ -76,8 +76,8 @@ public class UserTradeRedisLockService {
      * 재고 확인부터 차감, 주문 생성까지 보호합니다.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public OrderResponseDto tradeWithItemInfo(OrderRequestItemDto requestItemDto) {
-        Member member = memberRepository.findById(requestItemDto.getMemberId())
+    public OrderResponseDto tradeWithItemInfo(Long memberId,OrderRequestItemDto requestItemDto) {
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new RuntimeException("멤버를 찾을 수 없습니다"));
 
         return executeWithItemLock(requestItemDto.getItemId(), () -> {
