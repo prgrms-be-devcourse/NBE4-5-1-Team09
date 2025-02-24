@@ -13,21 +13,20 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReviewResponseDto {
-    private Long reviewId;         // 리뷰 ID
-    private Long memberId;         // 작성자의 멤버 ID
-    private Long itemId;           // 상품 ID
-    private String reviewContent;  // 리뷰 내용
-    private double rating;         // 리뷰 평점
-    private LocalDateTime createdAt; // 리뷰 작성 시간
-    private LocalDateTime modifiedAt; // 리뷰 수정 시간
+    private Long reviewId;
+    private String memberEmail;  // 이메일로 변경
+    private Long itemId;
+    private String reviewContent;
+    private double rating;
+    private LocalDateTime createdAt;
+    private LocalDateTime modifiedAt;
 
-    // fromEntity 메서드 추가
     public static ReviewResponseDto fromEntity(Review review) {
         ReviewResponseDto dto = new ReviewResponseDto();
         dto.setReviewId(review.getId());
-        dto.setMemberId(review.getMember().getId());
+        dto.setMemberEmail(review.getMember().getEmail());  // 이메일로 변경
         dto.setItemId(review.getItem().getId());
-        dto.setReviewContent(review.getReview_content());  // 엔티티의 필드 이름을 맞춤
+        dto.setReviewContent(review.getReviewContent());
         dto.setRating(review.getRating());
         dto.setCreatedAt(review.getCreatedAt());
         dto.setModifiedAt(review.getModifiedAt());
