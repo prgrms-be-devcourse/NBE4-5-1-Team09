@@ -1,8 +1,8 @@
-// src/app/account/page.tsx
 "use client";
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { useRouter } from "next/navigation";
+// import axios from "axios"; // 기존 단일 axios 주석 처리
+import api from "../../lib/axios"; // 공통 axios 인스턴스 import
 
 interface UserInfo {
   email: string;
@@ -22,12 +22,16 @@ export default function AccountPage() {
       router.push("/login");
       return;
     }
-    axios
+
+    // 공통 axios 인스턴스(api)를 사용하여 프로필 요청
+    api
       .get("/member/profile", {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setUserInfo(res.data))
-      .catch((err) => setError(err.response?.data || "회원 정보 조회 실패"));
+      .catch((err) => {
+        setError(err.response?.data || "회원 정보 조회 실패");
+      });
   }, [router]);
 
   if (error) {

@@ -4,16 +4,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 
+/** 필요한 필드를 정의 */
 interface JwtPayload {
   authority: string;
-  // 필요한 다른 필드 추가 가능
+  // 필요한 다른 필드...
 }
 
-// 간단한 JWT 디코딩 함수
+/** 토큰 디코딩 함수 */
 function decodeJwt(token: string): JwtPayload {
   try {
     const payloadPart = token.split(".")[1];
-    // Base64 URL 디코딩: '+'와 '/'를 원래 문자로 변환하고, '=' 패딩 추가
     const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
     const jsonPayload = decodeURIComponent(
       atob(base64)
@@ -30,13 +30,16 @@ function decodeJwt(token: string): JwtPayload {
 export default function Header() {
   const router = useRouter();
   const { token, setToken } = useAuth();
+
   const [isAdmin, setIsAdmin] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
 
+  // token 상태가 변할 때마다 헤더를 재렌더링
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    setLoggedIn(!!token);
     if (token) {
+      // 토큰이 있으면 로그인 상태
+      setLoggedIn(true);
+
       try {
         const decoded = decodeJwt(token);
         console.log("디코딩된 토큰:", decoded);
@@ -46,16 +49,23 @@ export default function Header() {
         setIsAdmin(false);
       }
     } else {
+      // 토큰이 없으면 비로그인 상태
+      setLoggedIn(false);
       setIsAdmin(false);
     }
-  }, []);
+  }, [token]); // <-- 의존성 배열 길이 = 1 (절대 바뀌지 않음)
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("email");
+
+    // AuthContext에서도 토큰 제거
     setToken(null);
+
+    // 홈으로 이동
     router.push("/");
-    window.location.reload();
+    // 필요 시 전체 새로고침:
+    // window.location.reload();
   };
 
   return (

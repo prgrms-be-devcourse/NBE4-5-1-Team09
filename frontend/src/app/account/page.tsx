@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+// import axios from "axios"; // 기존 axios import 주석 처리
+import api from "../../lib/axios"; // 공통 axios 인스턴스를 import
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 
@@ -29,14 +30,16 @@ export default function AccountPage() {
   const [delError, setDelError] = useState<string>("");
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
+    const localToken = localStorage.getItem("token");
+    if (!localToken) {
       router.push("/login");
       return;
     }
-    axios
+
+    // 공통 axios 인스턴스 사용
+    api
       .get("/member/profile", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${localToken}` },
       })
       .then((res) => {
         setProfile(res.data);
@@ -50,12 +53,17 @@ export default function AccountPage() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
+    const localToken = localStorage.getItem("token");
+    if (!localToken) {
+      setPasswordError("토큰이 없습니다. 다시 로그인 해주세요.");
+      return;
+    }
+
     try {
-      await axios.post(
+      await api.post(
         "/member/change-password",
         { oldPassword, newPassword },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${localToken}` } }
       );
       setPasswordMessage("비밀번호 변경 성공");
       setPasswordError("");
@@ -77,18 +85,25 @@ export default function AccountPage() {
 
   const handleDeleteAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
+    const localToken = localStorage.getItem("token");
+    if (!localToken) {
+      setDelError("토큰이 없습니다. 다시 로그인 해주세요.");
+      return;
+    }
+
     try {
-      await axios.delete("/member/delete", {
-        headers: { Authorization: `Bearer ${token}` },
+      await api.delete("/member/delete", {
+        headers: { Authorization: `Bearer ${localToken}` },
         data: { email: profile?.email, password: delPassword },
       });
       setDelMessage("회원 탈퇴 성공");
       setDelError("");
+
       // 글로벌 상태와 로컬 스토리지에서 토큰 제거
       setToken(null);
       localStorage.removeItem("token");
       localStorage.removeItem("email");
+
       // 즉시 Header가 업데이트됨
       router.refresh();
     } catch (err: any) {

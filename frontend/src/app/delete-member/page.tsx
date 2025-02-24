@@ -1,9 +1,9 @@
-// src/app/delete-member/page.tsx
 "use client";
 import React, { useState } from "react";
-import axios from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+// import axios from "axios"; // 기존 axios 대신
+import api from "../../lib/axios"; // 공통 axios 인스턴스 import
 
 export default function DeleteMemberPage() {
   const [email, setEmail] = useState("");
@@ -15,10 +15,17 @@ export default function DeleteMemberPage() {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
-      await axios.delete("/member/delete", {
+      if (!token) {
+        setError("로그인이 필요합니다.");
+        return;
+      }
+
+      // 공통 axios(api)를 사용해 DELETE 요청
+      await api.delete("/member/delete", {
         headers: { Authorization: `Bearer ${token}` },
         data: { email, password },
       });
+      // 탈퇴 성공 시 토큰 제거
       localStorage.removeItem("token");
       router.push("/signup");
     } catch (err: any) {

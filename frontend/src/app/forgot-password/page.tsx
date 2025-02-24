@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
-import axios from "axios";
+// import axios from "axios";  // 기존 axios 주석
+import api from "../../lib/axios"; // 공통 axios 인스턴스 import
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -14,14 +15,15 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     try {
       // 이메일을 보내 재설정 코드 요청
-      await axios.post("/member/forgot-password", { email });
+      await api.post("/member/forgot-password", { email });
       setMessage(
         "비밀번호 재설정 이메일을 전송했습니다. 재설정 페이지로 이동합니다."
       );
-      // 필요 시 이메일을 localStorage에도 저장 가능
+      // 필요 시 이메일을 localStorage에도 저장
       localStorage.setItem("resetEmail", email);
+
       setTimeout(() => {
-        // 재설정 페이지로 이동 (쿼리로 전달하거나, localStorage로 전달 가능)
+        // 재설정 페이지로 이동 (이메일을 쿼리로 전달)
         router.push(`/reset-password?email=${encodeURIComponent(email)}`);
       }, 2000);
     } catch (err: any) {
