@@ -35,7 +35,7 @@ public class Trade {
     private TradeStatus tradeStatus;
 
 
-    @OneToMany(mappedBy = "trade", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "trade", cascade = CascadeType.ALL)
     private List<TradeItem> tradeItems;
 
     private Integer totalPrice;
