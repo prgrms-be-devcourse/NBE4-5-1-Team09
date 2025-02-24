@@ -1,40 +1,11 @@
 // src/app/page.tsx
 "use client";
-import Link from "next/link";
 import React from "react";
+import Link from "next/link";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-blue-600 text-white p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold">카페</h1>
-          <nav>
-            <ul className="flex space-x-4">
-              <li>
-                <Link href="/">홈</Link>
-              </li>
-              <li>
-                <Link href="/login">로그인</Link>
-              </li>
-              <li>
-                <Link href="/products">상품</Link>
-              </li>
-              <li>
-                <Link href="/cart">장바구니</Link>
-              </li>
-              <li>
-                <Link href="/orders">주문/결제</Link>
-              </li>
-              <li>
-                <Link href="/reviews">리뷰</Link>
-              </li>
-            </ul>
-          </nav>
-        </div>
-      </header>
-
       {/* Hero Section */}
       <section className="bg-white py-12">
         <div className="container mx-auto text-center">

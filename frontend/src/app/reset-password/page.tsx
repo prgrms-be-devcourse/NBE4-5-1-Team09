@@ -1,32 +1,43 @@
-// src/app/reset-password/page.tsx
 "use client";
 import React, { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default function ResetPasswordPage() {
+export default function PasswordResetConfirmPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post("/member/reset-password", {
+      const res = await axios.post("/member/reset-password", {
         email,
         resetCode,
         newPassword,
       });
-      setMessage("비밀번호 재설정 성공, 로그인 페이지로 이동합니다.");
-      setTimeout(() => {
-        router.push("/login");
-      }, 2000);
+      if (res.data === "비밀번호 재설정 성공") {
+        setMessage("비밀번호 재설정 성공! 로그인 페이지로 이동합니다.");
+        setTimeout(() => {
+          router.push("/login");
+        }, 2000);
+      } else {
+        setError("비밀번호 재설정 실패");
+      }
     } catch (err: any) {
-      setError(err.response?.data || "비밀번호 재설정 실패");
+      let errMsg = "비밀번호 재설정 중 오류 발생";
+      if (err.response?.data) {
+        if (typeof err.response.data === "string") {
+          errMsg = err.response.data;
+        } else if (typeof err.response.data === "object") {
+          errMsg = err.response.data.msg || JSON.stringify(err.response.data);
+        }
+      }
+      setError(errMsg);
     }
   };
 
@@ -52,7 +63,7 @@ export default function ResetPasswordPage() {
           </div>
           <div className="mb-4">
             <label htmlFor="resetCode" className="block text-gray-700">
-              리셋 코드
+              재설정 코드
             </label>
             <input
               type="text"
@@ -80,14 +91,14 @@ export default function ResetPasswordPage() {
             type="submit"
             className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition-colors"
           >
-            재설정하기
+            재설정 확인
           </button>
         </form>
-        <p className="mt-4 text-center">
+        <div className="mt-4 text-center">
           <Link href="/login" className="text-blue-500 hover:underline">
-            로그인으로 돌아가기
+            로그인 페이지로 이동
           </Link>
-        </p>
+        </div>
       </div>
     </div>
   );
