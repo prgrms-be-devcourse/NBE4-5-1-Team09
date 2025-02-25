@@ -208,10 +208,7 @@ export default function ProductDetailPage({
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const { tradeUUID, totalPrice } = response.data;
-      alert("구매 주문이 생성되었습니다. 결제 옵션 페이지로 이동합니다.");
-      router.push(
-        `/payment/select?tradeUUID=${tradeUUID}&totalPrice=${totalPrice}`
-      );
+      router.push(`/payment?tradeUUID=${tradeUUID}&totalPrice=${totalPrice}`);
     } catch (err: any) {
       const errorData = err.response?.data;
       const errorMsg =
