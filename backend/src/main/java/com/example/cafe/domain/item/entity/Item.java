@@ -1,5 +1,6 @@
 package com.example.cafe.domain.item.entity;
 
+import com.example.cafe.domain.review.entity.Review;
 import com.example.cafe.domain.trade.domain.entity.CartItem;
 import jakarta.persistence.*;
 import lombok.*;
@@ -46,9 +47,9 @@ public class Item {
     @Enumerated(EnumType.STRING)
     private ItemStatus itemStatus;
 
-//    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
-//    private List<CartItem> cartItems;
-
+    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Review> reviews;
+    
     public void autoCheckQuantityForSetStatus() {
         if (this.getStock() <= 0) {
             this.itemStatus = ItemStatus.SOLD_OUT;
