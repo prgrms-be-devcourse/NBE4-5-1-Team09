@@ -20,16 +20,13 @@ spring:
     url: ${db.url}
     username: ${db.username}
     password: ${db.password}
-#    driver-class-name: com.mysql.cj.jdbc.Driver
-    driver-class-name: org.h2.Driver
+    driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       auto-commit: false
   jpa:
     open-in-view: false
     hibernate:
       ddl-auto: update
-      dialect: org.hibernate.dialect.MySQL8Dialect
-
     show-sql: false
     properties:
       hibernate:
@@ -52,6 +49,3 @@ custom:
 
 file:
   upload-dir: src/main/resources/static/images
-
-redisson:
-  address: "redis://127.0.0.1:6379"
