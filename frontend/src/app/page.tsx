@@ -116,11 +116,13 @@ export default function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {products.map((product) => (
                 <div key={product.id} className="bg-white p-4 rounded shadow">
-                  <img
-                    src={product.imagePath}
-                    alt={product.itemName}
-                    className="w-full h-48 object-cover mb-4"
-                  />
+                  <div className="w-full h-48 flex items-center justify-center overflow-hidden">
+                    <img
+                      src={`http://localhost:8080${product.imagePath}`}
+                      alt={product.itemName}
+                      className="max-w-full max-h-full object-cover"
+                    />
+                  </div>
                   <h4 className="text-xl font-bold mb-2">{product.itemName}</h4>
                   <p className="text-gray-600 mb-2">{product.content}</p>
                   <p className="text-lg font-bold mb-2">

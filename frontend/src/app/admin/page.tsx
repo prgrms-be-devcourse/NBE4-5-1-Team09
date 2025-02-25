@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import api from "../../lib/axios"; // 공통 axios 인스턴스 import
 import { useRouter } from "next/navigation";
 
@@ -39,10 +39,13 @@ function decodeJwt(token: string): JwtPayload | null {
 
 export default function AdminPage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
+  const [uploadStatus, setUploadStatus] = useState<string>("");
 
   // 신규 상품 등록 폼 상태
   const [newItem, setNewItem] = useState({
@@ -53,6 +56,10 @@ export default function AdminPage() {
     content: "",
     category: "",
   });
+
+  // 이미지 파일 상태
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [editSelectedFile, setEditSelectedFile] = useState<File | null>(null);
 
   // 수정 중인 상품 상태 (null이면 수정 모드 아님)
   const [editingItem, setEditingItem] = useState<Item | null>(null);
@@ -103,18 +110,49 @@ export default function AdminPage() {
         setError("인증되지 않았습니다.");
         return;
       }
+
       // price, stock은 Number로 변환
-      const payload = {
+      const itemData = {
         itemName: newItem.itemName,
         price: Number(newItem.price),
         stock: Number(newItem.stock),
-        imagePath: newItem.imagePath,
+        imagePath: newItem.imagePath, // 파일 없는 경우 URL 경로 사용
         content: newItem.content,
         category: newItem.category,
       };
-      await api.post("/items", payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+
+      // FormData 생성
+      const formData = new FormData();
+
+      // 상품 정보를 JSON 문자열로 변환하여 추가
+      formData.append(
+        "item",
+        new Blob([JSON.stringify(itemData)], { type: "application/json" })
+      );
+
+      let response;
+
+      if (selectedFile) {
+        // 파일이 있는 경우 이미지 포함 API 호출
+        formData.append("image", selectedFile);
+        setUploadStatus("업로드 중...");
+
+        response = await api.post("/items/image", formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        });
+
+        setUploadStatus("업로드 완료!");
+        setTimeout(() => setUploadStatus(""), 3000);
+      } else {
+        // 파일이 없는 경우 기존 API 호출
+        response = await api.post("/items", itemData, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
       setNewItem({
         itemName: "",
         price: "",
@@ -123,9 +161,14 @@ export default function AdminPage() {
         content: "",
         category: "",
       });
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
       fetchItems();
     } catch (err) {
       setError("상품 생성에 실패했습니다.");
+      setUploadStatus("");
     }
   };
 
@@ -139,16 +182,45 @@ export default function AdminPage() {
         setError("인증되지 않았습니다.");
         return;
       }
-      await api.put(`/items/${editingItem.id}`, editingItem, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+
+      if (editSelectedFile) {
+        // 파일이 있는 경우 FormData 사용
+        const formData = new FormData();
+
+        // 상품 정보를 JSON으로 변환하여 추가
+        formData.append(
+          "item",
+          new Blob([JSON.stringify(editingItem)], { type: "application/json" })
+        );
+        formData.append("image", editSelectedFile);
+
+        setUploadStatus("업로드 중...");
+
+        await api.put(`/items/${editingItem.id}/image`, formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        });
+
+        setUploadStatus("업로드 완료!");
+        setTimeout(() => setUploadStatus(""), 3000);
+      } else {
+        // 파일이 없는 경우 일반 JSON 요청
+        await api.put(`/items/${editingItem.id}`, editingItem, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
       setUpdateMessage("수정이 완료되었습니다.");
       setEditingItem(null);
+      setEditSelectedFile(null);
       fetchItems();
       // 3초 후 메시지 제거
       setTimeout(() => setUpdateMessage(""), 3000);
     } catch (err) {
       setError("상품 수정에 실패했습니다.");
+      setUploadStatus("");
     }
   };
 
@@ -171,6 +243,40 @@ export default function AdminPage() {
     }
   };
 
+  // 파일 선택 처리
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      // 파일 이름을 imagePath에 표시
+      setNewItem({ ...newItem, imagePath: file.name });
+    }
+  };
+
+  // 수정 폼 파일 선택 처리
+  const handleEditFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0 && editingItem) {
+      const file = e.target.files[0];
+      setEditSelectedFile(file);
+      // 파일 이름을 imagePath에 표시
+      setEditingItem({ ...editingItem, imagePath: file.name });
+    }
+  };
+
+  // 파일 선택 버튼 클릭 핸들러
+  const handleFileButtonClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // 수정 폼 파일 선택 버튼 클릭 핸들러
+  const handleEditFileButtonClick = () => {
+    if (editFileInputRef.current) {
+      editFileInputRef.current.click();
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -190,6 +296,9 @@ export default function AdminPage() {
         <p className="text-green-500 text-center mb-2">{deleteMessage}</p>
       )}
       {error && <p className="text-red-500 text-center mb-2">{error}</p>}
+      {uploadStatus && (
+        <p className="text-blue-500 text-center mb-2">{uploadStatus}</p>
+      )}
 
       {/* 신규 상품 등록 섹션 */}
       <section className="mb-8">
@@ -197,6 +306,7 @@ export default function AdminPage() {
         <form
           onSubmit={handleCreateItem}
           className="bg-white p-4 rounded shadow"
+          encType="multipart/form-data"
         >
           <div className="mb-2">
             <label className="block text-gray-700">상품 이름</label>
@@ -222,15 +332,39 @@ export default function AdminPage() {
             />
           </div>
           <div className="mb-2">
-            <label className="block text-gray-700">상품 이미지 URL</label>
-            <input
-              type="text"
-              value={newItem.imagePath}
-              onChange={(e) =>
-                setNewItem({ ...newItem, imagePath: e.target.value })
-              }
-              className="border p-2 rounded w-full"
-            />
+            <label className="block text-gray-700">상품 이미지</label>
+            <div className="flex">
+              <input
+                type="text"
+                value={newItem.imagePath}
+                onChange={(e) =>
+                  setNewItem({ ...newItem, imagePath: e.target.value })
+                }
+                className="border p-2 rounded w-full mr-2"
+                placeholder="파일 이름 또는 URL"
+                readOnly={!!selectedFile}
+              />
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept="image/*"
+              />
+              <button
+                type="button"
+                onClick={handleFileButtonClick}
+                className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
+              >
+                파일 선택
+              </button>
+            </div>
+            {selectedFile && (
+              <p className="text-sm text-green-600 mt-1">
+                선택된 파일: {selectedFile.name} (
+                {Math.round(selectedFile.size / 1024)} KB)
+              </p>
+            )}
           </div>
           <div className="mb-2">
             <label className="block text-gray-700">상품 가격</label>
@@ -300,7 +434,7 @@ export default function AdminPage() {
         {items.map((item) => (
           <div key={item.id} className="bg-white p-4 rounded shadow mb-2">
             {editingItem && editingItem.id === item.id ? (
-              <form onSubmit={handleUpdateItem}>
+              <form onSubmit={handleUpdateItem} encType="multipart/form-data">
                 <div className="mb-2">
                   <label className="block text-gray-700">상품 이름</label>
                   <input
@@ -331,18 +465,47 @@ export default function AdminPage() {
                   />
                 </div>
                 <div className="mb-2">
-                  <label className="block text-gray-700">상품 이미지 URL</label>
-                  <input
-                    type="text"
-                    value={editingItem.imagePath}
-                    onChange={(e) =>
-                      setEditingItem({
-                        ...editingItem,
-                        imagePath: e.target.value,
-                      })
-                    }
-                    className="border p-2 rounded w-full"
-                  />
+                  <label className="block text-gray-700">상품 이미지</label>
+                  <div className="flex">
+                    <input
+                      type="text"
+                      value={editingItem.imagePath}
+                      onChange={(e) =>
+                        setEditingItem({
+                          ...editingItem,
+                          imagePath: e.target.value,
+                        })
+                      }
+                      className="border p-2 rounded w-full mr-2"
+                      placeholder="파일 이름 또는 URL"
+                      readOnly={!!editSelectedFile}
+                    />
+                    <input
+                      type="file"
+                      ref={editFileInputRef}
+                      onChange={handleEditFileChange}
+                      className="hidden"
+                      accept="image/*"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleEditFileButtonClick}
+                      className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
+                    >
+                      파일 선택
+                    </button>
+                  </div>
+                  {editSelectedFile && (
+                    <p className="text-sm text-green-600 mt-1">
+                      선택된 파일: {editSelectedFile.name} (
+                      {Math.round(editSelectedFile.size / 1024)} KB)
+                    </p>
+                  )}
+                  {!editSelectedFile && item.imagePath && (
+                    <p className="text-sm text-blue-600 mt-1">
+                      현재 이미지: {item.imagePath.split("/").pop()}
+                    </p>
+                  )}
                 </div>
                 <div className="mb-2">
                   <label className="block text-gray-700">상품 가격</label>
@@ -402,7 +565,10 @@ export default function AdminPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setEditingItem(null)}
+                  onClick={() => {
+                    setEditingItem(null);
+                    setEditSelectedFile(null);
+                  }}
                   className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
                 >
                   취소
@@ -418,6 +584,11 @@ export default function AdminPage() {
                   <p className="text-sm text-gray-600">
                     카테고리: {item.category}
                   </p>
+                  {item.imagePath && (
+                    <p className="text-sm text-gray-600">
+                      이미지: {item.imagePath.split("/").pop()}
+                    </p>
+                  )}
                 </div>
                 <div className="flex space-x-2">
                   <button
