@@ -27,75 +27,9 @@
 https://www.erdcloud.com/team/kKm3uNXtgGF56Jrxx
 ![project-1 (2)](https://github.com/user-attachments/assets/30ffc652-b38a-4b81-a79c-3381aa7fc423)
 
-# 시스템 흐름도 초안
+# 시스템 아키텍처
+![image](https://github.com/user-attachments/assets/54d80966-1a42-47f8-ade7-ad8b0d6d94ad)
 
-```mermaid
-graph LR
-    %% 액터 영역
-    subgraph 사용자
-      U1[사용자]
-    end
-
-    subgraph 관리자
-      A1[관리자]
-    end
-
-    %% 프론트엔드 영역
-    subgraph 프론트엔드
-      F1["상품 상세 페이지 (상품 주문 요청, 리뷰 작성)"]
-      F2["장바구니 페이지 (수량 수정, 주문 요청)"]
-      F3["주문/결제 페이지 (결제 진행)"]
-      F4["상품 관리 페이지 (상품 등록/수정/삭제)"]
-      F5["리뷰 페이지 (리뷰 조회, 정렬)"]
-      F6["회원 관리 페이지 (회원가입, 로그인 등)"]
-    end
-
-    %% 백엔드 서비스 영역
-    subgraph 백엔드
-      S1["주문 관리 서비스"]
-      S2["상품 관리 서비스"]
-      S3["리뷰 관리 서비스"]
-      S4["유저 관리 서비스"]
-    end
-
-    %% 데이터베이스 영역
-    subgraph DB
-      DB1[(주문 테이블)]
-      DB2[(상품 테이블)]
-      DB3[(리뷰 테이블)]
-      DB4[(회원 테이블)]
-    end
-
-    %% 사용자 흐름
-    U1 --> F1
-    U1 --> F2
-    U1 --> F3
-    U1 --> F5
-    U1 --> F6
-
-    %% 관리자 흐름
-    A1 --> F4
-    A1 --> F6
-
-    %% 프론트엔드와 백엔드 연결
-    F1 --> S2
-    F1 --> S3
-    F2 --> S1
-    F3 --> S1
-    F4 --> S2
-    F5 --> S3
-    F6 --> S4
-
-    %% 백엔드와 데이터베이스 연결
-    S1 --> DB1
-    S2 --> DB2
-    S3 --> DB3
-    S4 --> DB4
-
-    %% 관리자 주문 승인/거절 흐름
-    A1 ---|주문 승인/거절 오후2시 기준| S1
-
-```
 
 # 시스템 IA
 
