@@ -255,11 +255,13 @@ export default function ProductDetailPage({
           <div className="flex gap-6">
             <div className="w-1/2">
               {product && (
-                <img
-                  src={product.imagePath}
-                  alt={product.itemName}
-                  className="w-full h-auto"
-                />
+                <div className="w-full h-96 flex justify-center items-center bg-gray-100">
+                  <img
+                    src={`http://localhost:8080${product.imagePath}`}
+                    alt={product.itemName}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
               )}
             </div>
             <div className="w-1/2">
