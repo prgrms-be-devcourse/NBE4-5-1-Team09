@@ -198,7 +198,7 @@ export default function OrderPage() {
     }
   };
 
-  const handlePayment = async (item: OrderItem, tradeUUID: string) => {
+  const handlePayment = async (tradeUUID: string) => {
     try {
       const token = localStorage.getItem("token");
       const memberEmail = localStorage.getItem("email");
@@ -208,9 +208,6 @@ export default function OrderPage() {
         router.push("/login");
         return;
       }
-
-      // 선택된 아이템의 수량
-      const buyQuantity = item.quantity;
 
       // 결제 요청을 위해 해당 아이템과 수량을 전달
       const response = await api.post(
@@ -258,15 +255,12 @@ export default function OrderPage() {
             >
               주문 취소
             </button>
-            {group.orderItemDtoList.map((item) => (
-              <button
-                key={item.itemId}
-                onClick={() => handlePayment(item, group.tradeUUID)} // item과 tradeUUID 전달
-                className="bg-green-500 text-white px-3 py-1 rounded"
-              >
-                결제하기
-              </button>
-            ))}
+            <button
+              onClick={() => handlePayment(group.tradeUUID)} // item과 tradeUUID 전달
+              className="bg-green-500 text-white px-3 py-1 rounded"
+            >
+              결제하기
+            </button>
           </div>
         )}
         {!isAdmin && status === "payList" && (
