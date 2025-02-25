@@ -126,6 +126,78 @@ export default function OrderPage() {
     }
   };
 
+  // 사용자 주문 취소 함수 (BUY)
+  const handleCancelBuyOrder = async (
+    tradeUUID: string,
+    orderItems: OrderItem[]
+  ) => {
+    // 각 주문 항목별로 취소할 수량을 입력받음
+    const cancelItemList = orderItems
+      .map((item) => {
+        const input = window.prompt(
+          `상품: ${item.itemName}\n주문 수량: ${item.quantity}\n취소할 수량을 입력하세요 (0 입력 시 취소 안함):`,
+          "0"
+        );
+        const qty = parseInt(input || "0", 10);
+        return { itemId: item.itemId, quantity: qty };
+      })
+      .filter((ci) => ci.quantity > 0);
+    if (cancelItemList.length === 0) return;
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("로그인이 필요합니다.");
+        return;
+      }
+      await api.post(
+        "/order/cancel",
+        { tradeUUID, cancelItemList },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("취소 요청이 완료되었습니다.");
+      fetchOrders();
+    } catch (err: any) {
+      alert("취소 요청에 실패했습니다.");
+      console.error(err);
+    }
+  };
+
+  // 사용자 주문 취소 함수 (PAY)
+  const handleCancelPayOrder = async (
+    tradeUUID: string,
+    orderItems: OrderItem[]
+  ) => {
+    const cancelItemList = orderItems
+      .map((item) => {
+        const input = window.prompt(
+          `상품: ${item.itemName}\n주문 수량: ${item.quantity}\n취소할 수량을 입력하세요 (0 입력 시 취소 안함):`,
+          "0"
+        );
+        const qty = parseInt(input || "0", 10);
+        return { itemId: item.itemId, quantity: qty };
+      })
+      .filter((ci) => ci.quantity > 0);
+    if (cancelItemList.length === 0) return;
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("로그인이 필요합니다.");
+        return;
+      }
+
+      await api.post(
+        "/order/cancel",
+        { tradeUUID, cancelItemList },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("취소 요청이 완료되었습니다.");
+      fetchOrders();
+    } catch (err: any) {
+      alert("취소 요청에 실패했습니다.");
+      console.error(err);
+    }
+  };
+
   const handlePayment = async (item: OrderItem, tradeUUID: string) => {
     try {
       const token = localStorage.getItem("token");
@@ -196,6 +268,16 @@ export default function OrderPage() {
               </button>
             ))}
           </div>
+        )}
+        {!isAdmin && status === "payList" && (
+          <button
+            onClick={() =>
+              handleCancelPayOrder(group.tradeUUID, group.orderItemDtoList)
+            }
+            className="bg-red-500 text-white px-3 py-1 rounded mt-2"
+          >
+            주문 취소
+          </button>
         )}
       </div>
     ));
