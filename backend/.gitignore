@@ -46,4 +46,3 @@ db_test.mv.db
 db_test.trace.db
 application-SECRET-KEY.yml
 application-secret.yml
-/src/main/resources/static/images/
