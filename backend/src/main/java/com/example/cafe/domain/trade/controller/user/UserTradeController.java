@@ -49,7 +49,7 @@ public class UserTradeController {
     }
 
     @Operation(summary = "사용자가 주문 후 특정 상품 취소", description = "취소 희망 상품 ID, 수량을 List 로 받을 수 있습니다.")
-    @PostMapping("cancel/buy")
+    @PostMapping("/cancel")
     public ResponseEntity<CancelResponseDto> cancelOnBuy(
             @Parameter(hidden = true)
             @RequestHeader(value = "Authorization", required = false) String authHeader,

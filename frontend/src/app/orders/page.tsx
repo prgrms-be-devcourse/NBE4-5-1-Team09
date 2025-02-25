@@ -125,7 +125,7 @@ export default function OrderPage() {
         return;
       }
       await api.post(
-        "/order/cancel/buy",
+        "/order/cancel",
         { tradeUUID, cancelItemList },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -159,10 +159,9 @@ export default function OrderPage() {
         alert("로그인이 필요합니다.");
         return;
       }
-      // 예시로 /cancel/pay 엔드포인트 호출 (백엔드에서 cancelTradeOnPay를 처리)
       await api.post(
-        "/cancel/pay",
-        { cancelItemList },
+        "/order/cancel",
+        { tradeUUID, cancelItemList },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       alert("취소 요청이 완료되었습니다.");
