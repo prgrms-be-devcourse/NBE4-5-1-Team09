@@ -224,6 +224,41 @@ export default function OrderPage() {
               <h3 className="text-xl font-semibold mb-2">결제 완료 (PAY)</h3>
               {renderOrderGroup(orders.payList, "payList")}
             </section>
+            {/* 그 외 상태들 (배송 준비중, 배송 전, 배송중 등) */}
+            <section className="mb-6">
+              <h3 className="text-xl font-semibold mb-2">
+                배송 준비중 (PREPARE_DELIVERY)
+              </h3>
+              {renderOrderGroup(
+                orders.prepareDeliveryList,
+                "prepareDeliveryList"
+              )}
+            </section>
+            <section className="mb-6">
+              <h3 className="text-xl font-semibold mb-2">
+                배송 전 (BEFORE_DELIVERY)
+              </h3>
+              {renderOrderGroup(
+                orders.beforeDeliveryList,
+                "beforeDeliveryList"
+              )}
+            </section>
+            <section className="mb-6">
+              <h3 className="text-xl font-semibold mb-2">
+                배송중 (IN_DELIVERY)
+              </h3>
+              {renderOrderGroup(orders.inDeliveryList, "inDeliveryList")}
+            </section>
+            <section className="mb-6">
+              <h3 className="text-xl font-semibold mb-2">
+                배송 완료 (POST_DELIVERY)
+              </h3>
+              {renderOrderGroup(orders.postDeliveryList, "postDeliveryList")}
+            </section>
+            <section className="mb-6">
+              <h3 className="text-xl font-semibold mb-2">주문 취소 (CANCEL)</h3>
+              {renderOrderGroup(orders.refusedList, "refusedList")}
+            </section>
           </div>
         ) : null}
       </main>
