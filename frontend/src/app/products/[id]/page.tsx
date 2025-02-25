@@ -16,7 +16,6 @@ interface Product {
   itemStatus: string;
 }
 
-// Review 인터페이스에 memberEmail 필드를 추가합니다.
 interface Review {
   reviewId: number;
   memberId: number;
@@ -44,6 +43,8 @@ export default function ProductDetailPage({
   const [myReviews, setMyReviews] = useState<Review[]>([]);
   const [editingReviewId, setEditingReviewId] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  // 구매 수량 상태 추가 (초기값 1)
+  const [buyQuantity, setBuyQuantity] = useState<number>(1);
 
   // URL 파라미터에서 ID 가져오기
   useEffect(() => {
@@ -60,6 +61,8 @@ export default function ProductDetailPage({
       const response = await axios.get(`http://localhost:8080/items/${id}`);
       setProduct(response.data);
       setLoading(false);
+      // 초기 구매 수량 1으로 설정
+      setBuyQuantity(1);
     } catch (err) {
       setError("상품 정보를 불러오는데 실패했습니다.");
       setLoading(false);
@@ -105,9 +108,7 @@ export default function ProductDetailPage({
         const jsonPayload = decodeURIComponent(
           atob(base64)
             .split("")
-            .map((c) => {
-              return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-            })
+            .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
             .join("")
         );
         const payload = JSON.parse(jsonPayload);
@@ -193,6 +194,49 @@ export default function ProductDetailPage({
     fetchReviews(id!, newSortType);
   };
 
+  // 구매하기: 단건 주문 API 호출
+  const handleBuyNow = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const memberEmail = localStorage.getItem("email");
+      if (!token || !memberEmail) {
+        alert("로그인이 필요합니다.");
+        router.push("/login");
+        return;
+      }
+      await axios.post(
+        "http://localhost:8080/order/item",
+        { memberEmail, itemId: product?.id, quantity: buyQuantity },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("구매 주문이 완료되었습니다.");
+      router.push("/order");
+    } catch (err: any) {
+      alert(err.response?.data || "구매 주문에 실패했습니다.");
+    }
+  };
+
+  // 장바구니 담기: 장바구니 추가 API 호출
+  const handleAddToCart = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const memberEmail = localStorage.getItem("email");
+      if (!token || !memberEmail) {
+        alert("로그인이 필요합니다.");
+        router.push("/login");
+        return;
+      }
+      await axios.post(
+        "http://localhost:8080/cart/add",
+        { memberEmail, itemId: product?.id, quantity: buyQuantity },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("상품이 장바구니에 추가되었습니다.");
+    } catch (err: any) {
+      alert(err.response?.data || "장바구니 추가에 실패했습니다.");
+    }
+  };
+
   if (loading) {
     return <div className="text-center my-8">로딩 중...</div>;
   }
@@ -236,32 +280,60 @@ export default function ProductDetailPage({
               >
                 {product?.itemStatus === "ON_SALE" ? "구매 가능" : "품절"}
               </p>
-              {/* 상품 상세 정보 아래에 주문하기 버튼 추가 */}
               {product?.itemStatus === "ON_SALE" && (
-                <div className="mt-4 flex gap-4">
-                  <Link
-                    href="/order/create"
-                    className="bg-green-500 text-white px-4 py-2 rounded"
-                  >
-                    주문하기
-                  </Link>
-                  <Link
-                    href="/products"
-                    className="text-blue-600 hover:underline inline-block"
-                  >
-                    돌아가기
-                  </Link>
+                <div className="mt-4">
+                  {/* 구매 수량 조절 입력 필드 */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <label className="font-medium">구매 수량:</label>
+                    <button
+                      onClick={() =>
+                        setBuyQuantity((prev) => Math.max(prev - 1, 1))
+                      }
+                      className="bg-gray-300 text-black px-2 py-1 rounded"
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      value={buyQuantity}
+                      onChange={(e) =>
+                        setBuyQuantity(parseInt(e.target.value, 10) || 1)
+                      }
+                      className="border rounded p-1 w-16 text-center"
+                    />
+                    <button
+                      onClick={() => setBuyQuantity((prev) => prev + 1)}
+                      className="bg-gray-300 text-black px-2 py-1 rounded"
+                    >
+                      +
+                    </button>
+                  </div>
+                  {/* 구매하기와 장바구니 담기 버튼 */}
+                  <div className="flex gap-4">
+                    <button
+                      onClick={handleBuyNow}
+                      className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                    >
+                      구매하기
+                    </button>
+                    <button
+                      onClick={handleAddToCart}
+                      className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+                    >
+                      장바구니 담기
+                    </button>
+                  </div>
                 </div>
               )}
-              {!product?.itemStatus ||
-                (product?.itemStatus !== "ON_SALE" && (
-                  <Link
-                    href="/products"
-                    className="text-blue-600 hover:underline mt-4 inline-block"
-                  >
-                    돌아가기
-                  </Link>
-                ))}
+              <div className="mt-4">
+                <Link
+                  href="/products"
+                  className="text-blue-600 hover:underline inline-block"
+                >
+                  돌아가기
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -271,8 +343,6 @@ export default function ProductDetailPage({
       <section className="py-12">
         <div className="container mx-auto">
           <h3 className="text-3xl font-bold mb-6 text-center">리뷰</h3>
-
-          {/* 내가 작성한 리뷰 목록 */}
           {myReviews.length > 0 && (
             <div className="bg-blue-100 p-4 rounded shadow mb-6">
               <h4 className="text-xl font-semibold mb-2">내가 작성한 리뷰</h4>
@@ -301,8 +371,6 @@ export default function ProductDetailPage({
               ))}
             </div>
           )}
-
-          {/* 리뷰 작성 모달 */}
           {showModal && (
             <div className="fixed top-0 left-0 w-full h-full bg-gray-800 bg-opacity-50 flex justify-center items-center">
               <div className="bg-white p-6 rounded shadow-md w-96">
@@ -317,7 +385,7 @@ export default function ProductDetailPage({
                 />
                 <div className="flex items-center mb-4">
                   <div className="flex items-center gap-2 mb-4">
-                    <span>평점 :&nbsp;{rating}</span>
+                    <span>평점 : {rating}</span>
                     <input
                       type="range"
                       min="1"
@@ -344,8 +412,6 @@ export default function ProductDetailPage({
               </div>
             </div>
           )}
-
-          {/* 리뷰 작성 버튼 */}
           <div className="text-right mb-4">
             <button
               onClick={() => setShowModal(true)}
@@ -354,8 +420,6 @@ export default function ProductDetailPage({
               리뷰 작성
             </button>
           </div>
-
-          {/* 리뷰 정렬 및 표시 */}
           <div className="text-right mb-4">
             <label className="mr-2">정렬 기준: </label>
             <select
@@ -368,7 +432,6 @@ export default function ProductDetailPage({
               <option value="LOWEST_RATING">평점 낮은 순</option>
             </select>
           </div>
-
           {reviews.length === 0 ? (
             <p className="text-center">리뷰가 없습니다.</p>
           ) : (
