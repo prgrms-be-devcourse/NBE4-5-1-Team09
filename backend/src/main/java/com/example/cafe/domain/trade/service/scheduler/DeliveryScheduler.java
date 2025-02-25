@@ -8,12 +8,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Component
 @Slf4j
 @RequiredArgsConstructor
+@Transactional
 public class DeliveryScheduler {
 
     private final TradeRepository tradeRepository;
@@ -24,6 +26,7 @@ public class DeliveryScheduler {
         List<Trade> prepareDeliveryTrades = tradeRepository.findByTradeStatus(TradeStatus.PREPARE_DELIVERY);
 
         for (Trade prepareDeliveryTrade : prepareDeliveryTrades) {
+            log.info("trade 상태변경 : {}", prepareDeliveryTrade.getTradeUUID());
             prepareDeliveryTrade.setTradeStatus(TradeStatus.BEFORE_DELIVERY);
         }
         log.info("trade 중 status 가 Prepare Delivery 인 거래를 Before Delivery 로 업데이트를 완료했습니다.");
