@@ -9,6 +9,7 @@ import com.example.cafe.domain.member.repository.MemberRepository;
 import com.example.cafe.domain.item.repository.ItemRepository;
 import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.domain.item.entity.Item;
+import com.example.cafe.domain.trade.repository.TradeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final MemberRepository memberRepository;
     private final ItemRepository itemRepository;
+    private final TradeRepository tradeRepository;
     private final ItemService itemService;
 
     @Transactional
@@ -30,6 +32,12 @@ public class ReviewService {
                 .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
+
+        boolean hasPurchased = tradeRepository.existsByMemberIdAndItemId(member.getId(), itemId);
+
+        if (!hasPurchased) {
+            throw new IllegalArgumentException("해당 상품을 구매한 사용자만 리뷰를 작성할 수 있습니다.");
+        }
 
         Review review = new Review();
         review.setMember(member);
@@ -91,4 +99,5 @@ public class ReviewService {
     public List<Review> findAllReviews() {
         return reviewRepository.findAll();
     }
+
 }
