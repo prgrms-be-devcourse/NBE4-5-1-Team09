@@ -265,7 +265,11 @@ export default function ProductDetailPage({
               <h2 className="text-3xl font-bold mb-4">{product?.itemName}</h2>
               <p className="text-lg mb-4">{product?.content}</p>
               <p className="text-xl font-bold text-green-600 mb-4">
-                가격: {product?.price}
+                가격:{" "}
+                {product?.price !== undefined
+                  ? new Intl.NumberFormat("ko-KR").format(product?.price)
+                  : "가격 정보 없음"}{" "}
+                원
               </p>
               <p className="text-sm text-black mb-4">
                 카테고리: {product?.category}
