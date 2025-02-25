@@ -48,7 +48,7 @@ export default function HomePage() {
       if (sort) params.append("sort", sort);
       // 여기서 page와 size 파라미터를 명시적으로 추가합니다.
       params.append("page", "0");
-      params.append("size", "30"); // 충분한 크기로 요청 (예: 20)
+      params.append("size", "30"); // 충분한 크기로 요청
 
       const res = await fetch(
         `http://localhost:8080/items/search?${params.toString()}`
@@ -274,7 +274,7 @@ export default function HomePage() {
                     </h4>
                     <p className="text-black mb-2">{product.content}</p>
                     <p className="text-lg font-bold mb-2">
-                      가격: {product.price}
+                      가격: ₩{Number(product.price).toLocaleString("ko-KR")}
                     </p>
                     <p className="text-sm text-black">
                       카테고리: {product.category}
