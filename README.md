@@ -27,6 +27,10 @@
 https://www.erdcloud.com/team/kKm3uNXtgGF56Jrxx
 ![project-1 (2)](https://github.com/user-attachments/assets/30ffc652-b38a-4b81-a79c-3381aa7fc423)
 
+# 시스템 아키텍처
+![image](https://github.com/user-attachments/assets/592ddbd8-6536-4651-900e-92b299322766)
+
+
 # 시스템 흐름도 초안
 
 ```mermaid
