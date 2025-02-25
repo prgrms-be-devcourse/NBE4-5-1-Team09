@@ -1,7 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-// import axios from "axios"; // 기존 axios 대신
-import api from "../../lib/axios"; // 공통 axios 인스턴스
+import api from "../../lib/axios";
 import Link from "next/link";
 
 interface OrderItem {
@@ -10,21 +9,47 @@ interface OrderItem {
   itemName: string;
 }
 
+interface OrderItemsGroup {
+  tradeUUID: string;
+  orderItemDtoList: OrderItem[];
+}
+
 interface OrdersResponse {
-  buyList: OrderItem[];
-  payList: OrderItem[];
-  prepareDeliveryList: OrderItem[];
-  beforeDeliveryList: OrderItem[];
-  inDeliveryList: OrderItem[];
-  postDeliveryList: OrderItem[];
-  refusedList: OrderItem[];
-  refundList: OrderItem[];
+  buyList: OrderItemsGroup[];
+  payList: OrderItemsGroup[];
+  prepareDeliveryList: OrderItemsGroup[];
+  beforeDeliveryList: OrderItemsGroup[];
+  inDeliveryList: OrderItemsGroup[];
+  postDeliveryList: OrderItemsGroup[];
+  refusedList: OrderItemsGroup[];
+  refundList: OrderItemsGroup[];
 }
 
 export default function OrderPage() {
   const [orders, setOrders] = useState<OrdersResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const base64Url = token.split(".")[1];
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split("")
+            .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+            .join("")
+        );
+        const payload = JSON.parse(jsonPayload);
+        setIsAdmin(payload.authority === "ADMIN");
+      } catch (e) {
+        console.error("토큰 디코딩 중 오류 발생", e);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     async function fetchOrders() {
@@ -35,29 +60,78 @@ export default function OrderPage() {
           setLoading(false);
           return;
         }
-        // 공통 axios 인스턴스 사용
-        const response = await api.get("/order/show", {
+
+        const endpoint = isAdmin ? "/admin/trade/all-trades" : "/order/show";
+        const response = await api.get(endpoint, {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         setOrders(response.data);
         setLoading(false);
       } catch (err: any) {
-        const errMsg =
-          err.response?.data?.msg || "주문 목록을 불러오지 못했습니다.";
-        setError(errMsg);
+        setError(err.response?.data?.msg || "주문 목록을 불러오지 못했습니다.");
         setLoading(false);
       }
     }
-    fetchOrders();
-  }, []);
+
+    if (localStorage.getItem("token")) {
+      fetchOrders();
+    }
+  }, [isAdmin]);
+
+  const updateOrderStatus = async (tradeUUID: string, endpoint: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      await api.post(
+        `/admin/trade/${endpoint}`,
+        { tradeUUID },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("주문 상태가 변경되었습니다.");
+      location.reload();
+    } catch (error) {
+      alert("주문 상태 변경에 실패했습니다.");
+    }
+  };
+
+  const renderOrderGroup = (orderGroups: OrderItemsGroup[], status: string) => {
+    if (orderGroups.length === 0) {
+      return <p>해당 상태의 주문이 없습니다.</p>;
+    }
+    return orderGroups.map((group, groupIndex) => (
+      <div key={groupIndex} className="border p-2 rounded mb-2">
+        <p>거래 ID: {group.tradeUUID}</p>
+        {group.orderItemDtoList.map((item, itemIndex) => (
+          <div key={itemIndex} className="ml-4">
+            <p>상품명: {item.itemName}</p>
+            <p>수량: {item.quantity}</p>
+          </div>
+        ))}
+        {isAdmin && (
+          <div className="mt-2">
+            {status === "buyList" && (
+              <button onClick={() => updateOrderStatus(group.tradeUUID, "confirm")} className="bg-blue-500 text-white px-3 py-1 rounded">확인</button>
+            )}
+            {status === "payList" && (
+              <button onClick={() => updateOrderStatus(group.tradeUUID, "prepare")} className="bg-yellow-500 text-white px-3 py-1 rounded">배송 준비</button>
+            )}
+            {status === "prepareDeliveryList" && (
+              <button onClick={() => updateOrderStatus(group.tradeUUID, "in-delivery")} className="bg-green-500 text-white px-3 py-1 rounded">배송 시작</button>
+            )}
+            {status === "inDeliveryList" && (
+              <button onClick={() => updateOrderStatus(group.tradeUUID, "post-delivery")} className="bg-purple-500 text-white px-3 py-1 rounded">배송 완료</button>
+            )}
+          </div>
+        )}
+      </div>
+    ));
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-blue-600 text-white p-4 flex justify-between items-center">
         <h1 className="text-xl font-bold">내 주문 목록</h1>
-        <Link href="/" className="underline">
-          메인 페이지로
-        </Link>
+        <Link href="/" className="underline">메인 페이지로</Link>
       </header>
       <main className="container mx-auto py-8">
         {loading ? (
@@ -67,59 +141,25 @@ export default function OrderPage() {
         ) : orders ? (
           <div>
             <h2 className="text-2xl font-bold mb-4">주문 현황</h2>
-
-            {/* BUY: 주문 대기 */}
             <section className="mb-6">
               <h3 className="text-xl font-semibold mb-2">주문 대기 (BUY)</h3>
-              {orders.buyList.length === 0 ? (
-                <p>주문 대기중인 상품이 없습니다.</p>
-              ) : (
-                orders.buyList.map((item, index) => (
-                  <div key={index} className="border p-2 rounded mb-2">
-                    <p>상품명: {item.itemName}</p>
-                    <p>수량: {item.quantity}</p>
-                  </div>
-                ))
-              )}
+              {renderOrderGroup(orders.buyList, "buyList")}
             </section>
-
-            {/* PAY: 결제 완료 */}
             <section className="mb-6">
               <h3 className="text-xl font-semibold mb-2">결제 완료 (PAY)</h3>
-              {orders.payList.length === 0 ? (
-                <p>결제 완료된 주문이 없습니다.</p>
-              ) : (
-                orders.payList.map((item, index) => (
-                  <div key={index} className="border p-2 rounded mb-2">
-                    <p>상품명: {item.itemName}</p>
-                    <p>수량: {item.quantity}</p>
-                  </div>
-                ))
-              )}
+              {renderOrderGroup(orders.payList, "payList")}
             </section>
-
-            {/* 배송 준비중 */}
             <section className="mb-6">
               <h3 className="text-xl font-semibold mb-2">배송 준비중</h3>
-              {orders.prepareDeliveryList.length === 0 ? (
-                <p>배송 준비중인 주문이 없습니다.</p>
-              ) : (
-                orders.prepareDeliveryList.map((item, index) => (
-                  <div key={index} className="border p-2 rounded mb-2">
-                    <p>상품명: {item.itemName}</p>
-                    <p>수량: {item.quantity}</p>
-                  </div>
-                ))
-              )}
+              {renderOrderGroup(orders.prepareDeliveryList, "prepareDeliveryList")}
             </section>
-
-            {/* 필요에 따라 다른 상태들 (배송 전, 배송중, 배송 완료, 취소, 환불 등) 추가 */}
+            <section className="mb-6">
+              <h3 className="text-xl font-semibold mb-2">배송중</h3>
+              {renderOrderGroup(orders.inDeliveryList, "inDeliveryList")}
+            </section>
           </div>
         ) : null}
       </main>
-      <footer className="bg-gray-800 text-white p-4 text-center">
-        © {new Date().getFullYear()} 카페. All rights reserved.
-      </footer>
     </div>
   );
 }
