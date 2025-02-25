@@ -211,6 +211,9 @@ export default function HomePage() {
                   <p className="text-sm text-black">
                     카테고리: {product.category}
                   </p>
+                  <p className="text-sm text-black">
+                    재고: {product.stock}
+                  </p>
                   <p className="text-yellow-500">
                   평점: {product.avgRating ? product.avgRating.toFixed(1) : "-"}
                   </p>

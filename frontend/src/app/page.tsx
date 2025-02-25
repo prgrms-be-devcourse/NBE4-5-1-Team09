@@ -126,6 +126,12 @@ export default function HomePage() {
                   <p className="text-yellow-500 mb-2">
                   평점: {product.avgRating ? product.avgRating.toFixed(1) : "-"}
                   </p>
+                  <p className="text-sm text-black">
+                    카테고리: {product.category}
+                  </p>
+                  <p className="text-sm text-black">
+                    재고: {product.stock}
+                  </p>
                   {/* 수량 입력 필드 */}
                   <div className="flex items-center gap-2 mb-4">
                     <label

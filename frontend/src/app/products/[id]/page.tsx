@@ -265,6 +265,9 @@ export default function ProductDetailPage({
               <p className="text-sm text-black mb-4">
                 카테고리: {product?.category}
               </p>
+              <p className="text-sm text-black">
+                    재고: {product?.stock}
+              </p>
               <p className="text-yellow-500 mb-4">
                 평점:{" "}
                 {product?.avgRating !== null
