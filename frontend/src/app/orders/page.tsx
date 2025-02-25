@@ -248,8 +248,7 @@ export default function OrderPage() {
             확인
           </button>
         )}
-        {/* 사용자 취소 버튼: BUY와 PAY 상태 모두 동일한 취소 로직 사용 */}
-        {!isAdmin && (status === "buyList" || status === "payList") && (
+        {!isAdmin && status === "buyList" && (
           <div className="mt-2 flex gap-2">
             <button
               onClick={() =>
@@ -259,19 +258,15 @@ export default function OrderPage() {
             >
               주문 취소
             </button>
-            {status === "buyList" && (
-              <>
-                {group.orderItemDtoList.map((item) => (
-                  <button
-                    key={item.itemId}
-                    onClick={() => handlePayment(item, group.tradeUUID)}
-                    className="bg-green-500 text-white px-3 py-1 rounded"
-                  >
-                    결제하기
-                  </button>
-                ))}
-              </>
-            )}
+            {group.orderItemDtoList.map((item) => (
+              <button
+                key={item.itemId}
+                onClick={() => handlePayment(item, group.tradeUUID)} // item과 tradeUUID 전달
+                className="bg-green-500 text-white px-3 py-1 rounded"
+              >
+                결제하기
+              </button>
+            ))}
           </div>
         )}
         {!isAdmin && status === "payList" && (
