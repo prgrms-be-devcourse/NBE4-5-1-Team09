@@ -71,7 +71,7 @@ export default function Header() {
   return (
     <header className="bg-blue-600 text-white p-4 m-0">
       <div className="container mx-auto flex justify-between items-center px-4">
-        <h1 className="text-2xl font-bold m-0">카페</h1>
+        <h1 className="text-2xl font-bold m-0">Code Brew</h1>
         <nav>
           <ul className="flex space-x-4 m-0 items-center">
             <li>

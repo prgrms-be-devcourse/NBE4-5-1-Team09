@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import axios from "axios";
 
 interface Product {
   id: number;
@@ -36,10 +35,11 @@ export default function HomePage() {
           const ratingB = b.avgRating ?? 0;
           return ratingB - ratingA;
         });
-        setProducts(sorted);
+        // 최대 6개까지만 선택
+        setProducts(sorted.slice(0, 6));
         // 초기 수량을 각 상품마다 1로 설정
         const initQuantities: { [key: number]: number } = {};
-        sorted.forEach((product) => {
+        sorted.slice(0, 6).forEach((product) => {
           initQuantities[product.id] = 1;
         });
         setQuantities(initQuantities);
@@ -70,11 +70,14 @@ export default function HomePage() {
     }
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        "http://localhost:8080/cart/add",
-        { itemId: product.id, quantity },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await fetch("http://localhost:8080/cart/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ itemId: product.id, quantity }),
+      });
       alert("장바구니에 상품이 추가되었습니다.");
     } catch (err: any) {
       alert(err.response?.data || "장바구니 추가에 실패했습니다.");
@@ -121,17 +124,16 @@ export default function HomePage() {
                   <h4 className="text-xl font-bold mb-2">{product.itemName}</h4>
                   <p className="text-gray-600 mb-2">{product.content}</p>
                   <p className="text-lg font-bold mb-2">
-                    가격: {product.price}
+                    가격: {product.price} 원
                   </p>
                   <p className="text-yellow-500 mb-2">
-                  평점: {product.avgRating ? product.avgRating.toFixed(1) : "-"}
+                    평점:{" "}
+                    {product.avgRating ? product.avgRating.toFixed(1) : "-"}
                   </p>
                   <p className="text-sm text-black">
                     카테고리: {product.category}
                   </p>
-                  <p className="text-sm text-black">
-                    재고: {product.stock}
-                  </p>
+                  <p className="text-sm text-black">재고: {product.stock}</p>
                   {/* 수량 입력 필드 */}
                   <div className="flex items-center gap-2 mb-4">
                     <label
@@ -177,7 +179,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="bg-gray-800 text-white p-4 text-center">
-        © {new Date().getFullYear()} 카페. All rights reserved.
+        © {new Date().getFullYear()} Code Brew. All rights reserved.
       </footer>
     </div>
   );

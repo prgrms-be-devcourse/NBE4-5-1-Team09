@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../../../lib/axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -43,25 +43,24 @@ export default function ProductDetailPage({
   const [myReviews, setMyReviews] = useState<Review[]>([]);
   const [editingReviewId, setEditingReviewId] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  // 구매 수량 상태 추가 (초기값 1)
+  // 구매 수량 상태 (초기값 1)
   const [buyQuantity, setBuyQuantity] = useState<number>(1);
 
   // URL 파라미터에서 ID 가져오기
   useEffect(() => {
-    const fetchParams = async () => {
+    (async () => {
       const resolvedParams = await params;
       setId(resolvedParams.id);
-    };
-    fetchParams();
+    })();
   }, [params]);
 
   // 상품 & 리뷰 가져오기
   const fetchProductData = async (id: string) => {
     try {
-      const response = await axios.get(`http://localhost:8080/items/${id}`);
+      const response = await api.get(`/items/${id}`);
       setProduct(response.data);
       setLoading(false);
-      // 초기 구매 수량 1으로 설정
+      // 초기 구매 수량 1로 설정
       setBuyQuantity(1);
     } catch (err) {
       setError("상품 정보를 불러오는데 실패했습니다.");
@@ -72,8 +71,8 @@ export default function ProductDetailPage({
   const fetchReviews = async (id: string, sortType: string) => {
     try {
       const memberEmail = localStorage.getItem("email");
-      const response = await axios.get(
-        `http://localhost:8080/reviews/item/${id}/${memberEmail}?sortType=${sortType}`
+      const response = await api.get(
+        `/reviews/item/${id}/${memberEmail}?sortType=${sortType}`
       );
       setReviews(response.data);
       setLoading(false);
@@ -87,9 +86,7 @@ export default function ProductDetailPage({
     const memberEmail = localStorage.getItem("email");
     if (!memberEmail) return;
     try {
-      const response = await axios.get(
-        `http://localhost:8080/reviews/my/item/${id}/${memberEmail}`
-      );
+      const response = await api.get(`/reviews/my/item/${id}/${memberEmail}`);
       if (Array.isArray(response.data)) {
         setMyReviews(response.data);
       }
@@ -137,14 +134,14 @@ export default function ProductDetailPage({
         return;
       }
       if (editingReviewId) {
-        await axios.put(
-          `http://localhost:8080/reviews/update/${editingReviewId}`,
+        await api.put(
+          `/reviews/update/${editingReviewId}`,
           { reviewContent, rating },
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
-        await axios.post(
-          "http://localhost:8080/reviews/create",
+        await api.post(
+          "/reviews/create",
           { memberEmail, itemId: id, reviewContent, rating },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -170,7 +167,7 @@ export default function ProductDetailPage({
         router.push("/login");
         return;
       }
-      await axios.delete(`http://localhost:8080/reviews/delete/${reviewId}`, {
+      await api.delete(`/reviews/delete/${reviewId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchReviews(id!, sortType);
@@ -194,25 +191,34 @@ export default function ProductDetailPage({
     fetchReviews(id!, newSortType);
   };
 
-  // 구매하기: 단건 주문 API 호출
+  // 구매하기: 단건 주문 API 호출 후, 결제 옵션 페이지(PaymentSelectionPage)로 이동
   const handleBuyNow = async () => {
     try {
       const token = localStorage.getItem("token");
       const memberEmail = localStorage.getItem("email");
-      if (!token || !memberEmail) {
+      console.log("handleBuyNow - token:", token); // 토큰 값 디버깅
+      if (!token || !memberEmail || !product) {
         alert("로그인이 필요합니다.");
         router.push("/login");
         return;
       }
-      await axios.post(
-        "http://localhost:8080/order/item",
-        { memberEmail, itemId: product?.id, quantity: buyQuantity },
+      const response = await api.post(
+        "/order/item",
+        { memberEmail, itemId: product.id, quantity: buyQuantity },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert("구매 주문이 완료되었습니다.");
-      router.push("/order");
+      const { tradeUUID, totalPrice } = response.data;
+      alert("구매 주문이 생성되었습니다. 결제 옵션 페이지로 이동합니다.");
+      router.push(
+        `/payment/select?tradeUUID=${tradeUUID}&totalPrice=${totalPrice}`
+      );
     } catch (err: any) {
-      alert(err.response?.data || "구매 주문에 실패했습니다.");
+      const errorData = err.response?.data;
+      const errorMsg =
+        typeof errorData === "object"
+          ? JSON.stringify(errorData)
+          : errorData || "구매 주문에 실패했습니다.";
+      alert(errorMsg);
     }
   };
 
@@ -221,14 +227,14 @@ export default function ProductDetailPage({
     try {
       const token = localStorage.getItem("token");
       const memberEmail = localStorage.getItem("email");
-      if (!token || !memberEmail) {
+      if (!token || !memberEmail || !product) {
         alert("로그인이 필요합니다.");
         router.push("/login");
         return;
       }
-      await axios.post(
-        "http://localhost:8080/cart/add",
-        { memberEmail, itemId: product?.id, quantity: buyQuantity },
+      await api.post(
+        "/cart/add",
+        { memberEmail, itemId: product.id, quantity: buyQuantity },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       alert("상품이 장바구니에 추가되었습니다.");
@@ -265,9 +271,7 @@ export default function ProductDetailPage({
               <p className="text-sm text-black mb-4">
                 카테고리: {product?.category}
               </p>
-              <p className="text-sm text-black">
-                    재고: {product?.stock}
-              </p>
+              <p className="text-sm text-black">재고: {product?.stock}</p>
               <p className="text-yellow-500 mb-4">
                 평점:{" "}
                 {product?.avgRating !== null

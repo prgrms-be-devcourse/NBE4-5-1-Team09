@@ -1,4 +1,4 @@
-// PaymentSelectionPage.tsx (경로 예: app/payment/select/page.tsx 또는 pages/payment/select.tsx)
+// PaymentSelectionPage.tsx (경로 : app/payment/select/page.tsx)
 "use client";
 import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
