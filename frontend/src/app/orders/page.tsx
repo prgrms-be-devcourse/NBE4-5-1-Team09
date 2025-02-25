@@ -130,23 +130,23 @@ export default function OrderPage() {
     try {
       const token = localStorage.getItem("token");
       const memberEmail = localStorage.getItem("email");
-  
+
       if (!token || !memberEmail) {
         alert("로그인이 필요합니다.");
         router.push("/login");
         return;
       }
-  
+
       // 선택된 아이템의 수량
       const buyQuantity = item.quantity;
-  
+
       // 결제 요청을 위해 해당 아이템과 수량을 전달
       const response = await api.post(
-        "/order/item",
-        { memberEmail, itemId: item.itemId, quantity: buyQuantity },
+        "/order/pay-retry",
+        { tradeUUID },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-  
+
       const { totalPrice } = response.data;
       router.push(`/payment?tradeUUID=${tradeUUID}&totalPrice=${totalPrice}`);
     } catch (err: any) {
@@ -154,9 +154,6 @@ export default function OrderPage() {
       console.error(err);
     }
   };
-  
-  
-  
 
   const renderOrderGroup = (orderGroups: OrderItemsGroup[], status: string) => {
     if (orderGroups.length === 0) {
@@ -182,7 +179,9 @@ export default function OrderPage() {
         {!isAdmin && status === "buyList" && (
           <div className="mt-2 flex gap-2">
             <button
-              onClick={() => handleCancelOrder(group.tradeUUID, group.orderItemDtoList)}
+              onClick={() =>
+                handleCancelOrder(group.tradeUUID, group.orderItemDtoList)
+              }
               className="bg-red-500 text-white px-3 py-1 rounded"
             >
               주문 취소
@@ -205,8 +204,12 @@ export default function OrderPage() {
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-blue-600 text-white p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold">내 주문 목록 {isAdmin ? "(관리자)" : ""}</h1>
-        <Link href="/" className="underline">메인 페이지로</Link>
+        <h1 className="text-xl font-bold">
+          내 주문 목록 {isAdmin ? "(관리자)" : ""}
+        </h1>
+        <Link href="/" className="underline">
+          메인 페이지로
+        </Link>
       </header>
       <main className="container mx-auto py-8">
         {loading ? (

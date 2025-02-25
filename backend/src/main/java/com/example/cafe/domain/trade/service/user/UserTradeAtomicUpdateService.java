@@ -7,9 +7,11 @@ import com.example.cafe.domain.member.entity.Member;
 import com.example.cafe.domain.member.repository.MemberRepository;
 import com.example.cafe.domain.trade.domain.dto.request.CancelRequestDto;
 import com.example.cafe.domain.trade.domain.dto.request.OrderRequestItemDto;
+import com.example.cafe.domain.trade.domain.dto.request.RePayRequestDto;
 import com.example.cafe.domain.trade.domain.dto.response.CancelResponseDto;
 import com.example.cafe.domain.trade.domain.dto.response.OrderResponseDto;
 import com.example.cafe.domain.trade.domain.dto.response.OrdersResponseDto;
+import com.example.cafe.domain.trade.domain.dto.response.RePayResponseDto;
 import com.example.cafe.domain.trade.domain.entity.CartItem;
 import com.example.cafe.domain.trade.domain.entity.Trade;
 import com.example.cafe.domain.trade.domain.entity.TradeItem;
@@ -495,5 +497,12 @@ public class UserTradeAtomicUpdateService {
         return tradeItems.stream()
                 .mapToInt(ti -> ti.getItem().getPrice() * ti.getQuantity())
                 .sum();
+    }
+
+    public RePayResponseDto payRetry(Long idFromToken, RePayRequestDto requestDto) {
+        System.out.println("payRetry");
+        System.out.println(requestDto.getTradeUUID());
+        Integer totalPrice = tradeRepository.findByTradeUUID(requestDto.getTradeUUID()).orElseThrow(() -> new RuntimeException("해당 거래를 찾을 수 없습니다.")).getTotalPrice();
+        return new RePayResponseDto(totalPrice);
     }
 }
