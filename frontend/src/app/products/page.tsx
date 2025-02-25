@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-// import axios from "axios";  // 기존 axios 대신
+import { useRouter } from "next/navigation"; // App Router 환경에서는 next/navigation 사용
 import api from "../../lib/axios"; // 공통 axios 인스턴스 import
 
 interface Product {
@@ -17,37 +17,46 @@ interface Product {
 }
 
 export default function HomePage() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const router = useRouter();
+
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [displayProducts, setDisplayProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // 검색 및 필터 상태
+  // 검색, 필터 상태
   const [keyword, setKeyword] = useState("");
   const [category, setCategory] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [sort, setSort] = useState(""); // 예: "priceAsc", "priceDesc", "ratingDesc"
 
-  // 검색/필터/정렬 적용 API 호출 함수
+  // 페이징 상태
+  const pageSize = 9;
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(0);
+
+  // 검색/필터/정렬 적용 API 호출 함수 (백엔드에서 단순 배열(Product[])을 반환한다고 가정)
   const fetchProducts = async () => {
     try {
+      setLoading(true);
       const params = new URLSearchParams();
       if (keyword) params.append("keyword", keyword);
       if (category) params.append("category", category);
       if (minPrice) params.append("minPrice", minPrice);
       if (maxPrice) params.append("maxPrice", maxPrice);
       if (sort) params.append("sort", sort);
+      // 여기서 page와 size 파라미터를 명시적으로 추가합니다.
       params.append("page", "0");
-      params.append("size", "10");
+      params.append("size", "30"); // 충분한 크기로 요청 (예: 20)
 
-      // 상품 목록은 기존 fetch로
       const res = await fetch(
         `http://localhost:8080/items/search?${params.toString()}`
       );
       if (!res.ok) throw new Error("상품 목록을 불러오지 못했습니다.");
       const data: Product[] = await res.json();
 
-      // 클라이언트 측 정렬(옵션)
+      // 클라이언트 측 정렬 (옵션)
       let sortedData = data;
       if (sort) {
         sortedData = [...data].sort((a, b) => {
@@ -62,13 +71,22 @@ export default function HomePage() {
         });
       }
 
-      setProducts(sortedData);
+      setAllProducts(sortedData);
+      setTotalPages(Math.ceil(sortedData.length / pageSize));
+      setCurrentPage(0); // 새로운 검색 시 첫 페이지로
       setLoading(false);
     } catch (err: any) {
       setError(err.message);
       setLoading(false);
     }
   };
+
+  // 페이지 변경 시 화면에 보여줄 상품 목록 업데이트
+  useEffect(() => {
+    const start = currentPage * pageSize;
+    const end = start + pageSize;
+    setDisplayProducts(allProducts.slice(start, end));
+  }, [allProducts, currentPage]);
 
   // 첫 로딩 시 상품 목록 호출
   useEffect(() => {
@@ -77,8 +95,52 @@ export default function HomePage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     fetchProducts();
+  };
+
+  // 페이지 변경 핸들러
+  const handlePageChange = (page: number) => {
+    if (page < 0 || page >= totalPages) return;
+    setCurrentPage(page);
+  };
+
+  // 페이징 UI 렌더링
+  const renderPagination = () => {
+    const pages = [];
+    for (let i = 0; i < totalPages; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => handlePageChange(i)}
+          className={`px-3 py-1 border mx-1 rounded ${
+            i === currentPage
+              ? "bg-blue-500 text-white"
+              : "bg-white text-blue-500 hover:bg-blue-100"
+          }`}
+        >
+          {i + 1}
+        </button>
+      );
+    }
+    return (
+      <div className="flex justify-center mt-8">
+        <button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 0}
+          className="px-3 py-1 border mx-1 rounded disabled:opacity-50"
+        >
+          Prev
+        </button>
+        {pages}
+        <button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages - 1}
+          className="px-3 py-1 border mx-1 rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
+    );
   };
 
   // 장바구니에 상품 추가하는 함수 (공통 axios 인스턴스 사용)
@@ -89,13 +151,11 @@ export default function HomePage() {
         alert("로그인이 필요합니다.");
         return;
       }
-
       await api.post(
         "/cart/add",
         { itemId: productId, quantity: 1 },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       alert("장바구니에 상품이 추가되었습니다.");
     } catch (err: any) {
       const errorMsg = err.response?.data || "장바구니 추가에 실패했습니다.";
@@ -192,57 +252,57 @@ export default function HomePage() {
             <div className="text-center">상품 로딩 중...</div>
           ) : error ? (
             <div className="text-center text-red-500">{error}</div>
-          ) : products.length === 0 ? (
+          ) : allProducts.length === 0 ? (
             <div className="text-center">검색 조건에 맞는 상품이 없습니다.</div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {products.map((product) => (
-                <div
-                  key={product.id}
-                  className="bg-white p-4 rounded shadow flex flex-col h-full"
-                >
-                  <div className="w-full h-48 flex items-center justify-center overflow-hidden">
-                    <img
-                      src={`http://localhost:8080${product.imagePath}`}
-                      alt={product.itemName}
-                      className="max-w-full max-h-full object-cover"
-                    />
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {displayProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    className="bg-white p-4 rounded shadow flex flex-col h-full"
+                  >
+                    <div className="w-full h-48 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={`http://localhost:8080${product.imagePath}`}
+                        alt={product.itemName}
+                        className="max-w-full max-h-full object-cover"
+                      />
+                    </div>
+                    <h4 className="text-xl font-bold mb-2">
+                      {product.itemName}
+                    </h4>
+                    <p className="text-black mb-2">{product.content}</p>
+                    <p className="text-lg font-bold mb-2">
+                      가격: {product.price}
+                    </p>
+                    <p className="text-sm text-black">
+                      카테고리: {product.category}
+                    </p>
+                    <p className="text-sm text-black">재고: {product.stock}</p>
+                    <p className="text-yellow-500">
+                      평점:{" "}
+                      {product.avgRating ? product.avgRating.toFixed(1) : "-"}
+                    </p>
+                    <div className="flex flex-col gap-2 mt-auto">
+                      <Link
+                        href={`/products/${product.id}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        자세히 보기
+                      </Link>
+                      <button
+                        onClick={() => handleAddToCart(product.id)}
+                        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                      >
+                        장바구니 담기
+                      </button>
+                    </div>
                   </div>
-                  <h4 className="text-xl font-bold mb-2">{product.itemName}</h4>
-                  <p className="text-black mb-2">{product.content}</p>
-                  <p className="text-lg font-bold mb-2">
-                    가격:{" "}
-                    {new Intl.NumberFormat("ko-KR", {
-                      style: "currency",
-                      currency: "KRW",
-                    }).format(product.price)}
-                  </p>
-                  <p className="text-sm text-black">
-                    카테고리: {product.category}
-                  </p>
-                  <p className="text-sm text-black">재고: {product.stock}</p>
-                  <p className="text-yellow-500">
-                    평점:{" "}
-                    {product.avgRating ? product.avgRating.toFixed(1) : "-"}
-                  </p>
-                  {/* 버튼 영역을 카드 하단에 고정 */}
-                  <div className="flex flex-col gap-2 mt-auto">
-                    <Link
-                      href={`/products/${product.id}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      자세히 보기
-                    </Link>
-                    <button
-                      onClick={() => handleAddToCart(product.id)}
-                      className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                    >
-                      장바구니 담기
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              {renderPagination()}
+            </>
           )}
         </div>
       </section>

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import api from "../../lib/axios";
 import Link from "next/link";
 
@@ -17,9 +17,9 @@ interface OrderItemsGroup {
 interface OrdersResponse {
   buyList: OrderItemsGroup[]; // BUY 상태 (일반 주문)
   payList: OrderItemsGroup[]; // PAY 상태 (결제 완료)
-  prepareDeliveryList: OrderItemsGroup[]; // PREPARE_DELIVERY 상태 (배송 준비중)
-  beforeDeliveryList: OrderItemsGroup[]; // BEFORE_DELIVERY 상태 (배송 전)
-  inDeliveryList: OrderItemsGroup[]; // IN_DELIVERY 상태 (배송중)
+  prepareDeliveryList: OrderItemsGroup[]; // 배송 준비중
+  beforeDeliveryList: OrderItemsGroup[]; // 배송 전
+  inDeliveryList: OrderItemsGroup[]; // 배송중
   postDeliveryList: OrderItemsGroup[];
   refusedList: OrderItemsGroup[];
   refundList: OrderItemsGroup[];
@@ -101,7 +101,79 @@ export default function OrderPage() {
     }
   };
 
-  // 주문 그룹 렌더링: 상태별 버튼은 관리자인 경우에만 표시
+  // 사용자 주문 취소 함수 (BUY)
+  const handleCancelBuyOrder = async (
+    tradeUUID: string,
+    orderItems: OrderItem[]
+  ) => {
+    // 각 주문 항목별로 취소할 수량을 입력받음
+    const cancelItemList = orderItems
+      .map((item) => {
+        const input = window.prompt(
+          `상품: ${item.itemName}\n주문 수량: ${item.quantity}\n취소할 수량을 입력하세요 (0 입력 시 취소 안함):`,
+          "0"
+        );
+        const qty = parseInt(input || "0", 10);
+        return { itemId: item.itemId, quantity: qty };
+      })
+      .filter((ci) => ci.quantity > 0);
+    if (cancelItemList.length === 0) return;
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("로그인이 필요합니다.");
+        return;
+      }
+      await api.post(
+        "/order/cancel/buy",
+        { tradeUUID, cancelItemList },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("취소 요청이 완료되었습니다.");
+      fetchOrders();
+    } catch (err: any) {
+      alert("취소 요청에 실패했습니다.");
+      console.error(err);
+    }
+  };
+
+  // 사용자 주문 취소 함수 (PAY)
+  const handleCancelPayOrder = async (
+    tradeUUID: string,
+    orderItems: OrderItem[]
+  ) => {
+    const cancelItemList = orderItems
+      .map((item) => {
+        const input = window.prompt(
+          `상품: ${item.itemName}\n주문 수량: ${item.quantity}\n취소할 수량을 입력하세요 (0 입력 시 취소 안함):`,
+          "0"
+        );
+        const qty = parseInt(input || "0", 10);
+        return { itemId: item.itemId, quantity: qty };
+      })
+      .filter((ci) => ci.quantity > 0);
+    if (cancelItemList.length === 0) return;
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("로그인이 필요합니다.");
+        return;
+      }
+      // 예시로 /cancel/pay 엔드포인트 호출 (백엔드에서 cancelTradeOnPay를 처리)
+      await api.post(
+        "/cancel/pay",
+        { cancelItemList },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("취소 요청이 완료되었습니다.");
+      fetchOrders();
+    } catch (err: any) {
+      alert("취소 요청에 실패했습니다.");
+      console.error(err);
+    }
+  };
+
+  // 주문 그룹 렌더링: 상태별 버튼은 관리자인 경우에는 관리 기능, 사용자인 경우에는 주문 취소 버튼 추가
   const renderOrderGroup = (orderGroups: OrderItemsGroup[], status: string) => {
     if (orderGroups.length === 0) {
       return <p>해당 상태의 주문이 없습니다.</p>;
@@ -115,45 +187,53 @@ export default function OrderPage() {
             <p>수량: {item.quantity}</p>
           </div>
         ))}
-        {isAdmin && (
-          <div className="mt-2">
-            {status === "payList" && (
-              <button
-                onClick={() => updateOrderStatus(group.tradeUUID, "confirm")}
-                className="bg-blue-500 text-white px-3 py-1 rounded"
-              >
-                확인
-              </button>
-            )}
-            {status === "prepareDeliveryList" && (
-              <button
-                onClick={() => updateOrderStatus(group.tradeUUID, "prepare")}
-                className="bg-yellow-500 text-white px-3 py-1 rounded"
-              >
-                배송 준비
-              </button>
-            )}
-            {status === "beforeDeliveryList" && (
-              <button
-                onClick={() =>
-                  updateOrderStatus(group.tradeUUID, "in-delivery")
-                }
-                className="bg-green-500 text-white px-3 py-1 rounded"
-              >
-                배송 시작
-              </button>
-            )}
-            {status === "inDeliveryList" && (
-              <button
-                onClick={() =>
-                  updateOrderStatus(group.tradeUUID, "post-delivery")
-                }
-                className="bg-purple-500 text-white px-3 py-1 rounded"
-              >
-                배송 완료
-              </button>
-            )}
-          </div>
+        {/* 관리자인 경우 기존 상태 변경 버튼 */}
+        {isAdmin && status === "payList" && (
+          <button
+            onClick={() => updateOrderStatus(group.tradeUUID, "confirm")}
+            className="bg-blue-500 text-white px-3 py-1 rounded mt-2"
+          >
+            확인
+          </button>
+        )}
+        {isAdmin && status === "prepareDeliveryList" && (
+          <button
+            onClick={() => updateOrderStatus(group.tradeUUID, "prepare")}
+            className="bg-yellow-500 text-white px-3 py-1 rounded mt-2"
+          >
+            배송 준비
+          </button>
+        )}
+        {isAdmin && status === "beforeDeliveryList" && (
+          <button
+            onClick={() => updateOrderStatus(group.tradeUUID, "in-delivery")}
+            className="bg-green-500 text-white px-3 py-1 rounded mt-2"
+          >
+            배송 시작
+          </button>
+        )}
+        {isAdmin && status === "inDeliveryList" && (
+          <button
+            onClick={() => updateOrderStatus(group.tradeUUID, "post-delivery")}
+            className="bg-purple-500 text-white px-3 py-1 rounded mt-2"
+          >
+            배송 완료
+          </button>
+        )}
+        {/* 사용자일 경우, BUY와 PAY 상태에서 주문 취소 버튼 표시 */}
+        {!isAdmin && (status === "buyList" || status === "payList") && (
+          <button
+            onClick={() => {
+              if (status === "buyList") {
+                handleCancelBuyOrder(group.tradeUUID, group.orderItemDtoList);
+              } else if (status === "payList") {
+                handleCancelPayOrder(group.tradeUUID, group.orderItemDtoList);
+              }
+            }}
+            className="bg-red-500 text-white px-3 py-1 rounded mt-2"
+          >
+            주문 취소
+          </button>
         )}
       </div>
     ));
@@ -178,19 +258,19 @@ export default function OrderPage() {
           <div>
             <h2 className="text-2xl font-bold mb-4">주문 현황</h2>
 
-            {/* BUY 상태는 관리 작업 대상이 아니므로 버튼 미표시 */}
+            {/* BUY 상태: 사용자 취소 버튼 표시 */}
             <section className="mb-6">
               <h3 className="text-xl font-semibold mb-2">주문 대기 (BUY)</h3>
               {renderOrderGroup(orders.buyList, "buyList")}
             </section>
 
-            {/* 결제 완료 (PAY): 확인 버튼 */}
+            {/* 결제 완료 (PAY): 사용자 취소 버튼 표시 */}
             <section className="mb-6">
               <h3 className="text-xl font-semibold mb-2">결제 완료 (PAY)</h3>
               {renderOrderGroup(orders.payList, "payList")}
             </section>
 
-            {/* 배송 준비중 (PREPARE_DELIVERY): 배송 준비 버튼 */}
+            {/* 그 외 상태들 (배송 준비중, 배송 전, 배송중 등) */}
             <section className="mb-6">
               <h3 className="text-xl font-semibold mb-2">
                 배송 준비중 (PREPARE_DELIVERY)
@@ -200,8 +280,6 @@ export default function OrderPage() {
                 "prepareDeliveryList"
               )}
             </section>
-
-            {/* 배송 전 (BEFORE_DELIVERY): 배송 시작 버튼 */}
             <section className="mb-6">
               <h3 className="text-xl font-semibold mb-2">
                 배송 전 (BEFORE_DELIVERY)
@@ -211,8 +289,6 @@ export default function OrderPage() {
                 "beforeDeliveryList"
               )}
             </section>
-
-            {/* 배송중 (IN_DELIVERY): 배송 완료 버튼 */}
             <section className="mb-6">
               <h3 className="text-xl font-semibold mb-2">
                 배송중 (IN_DELIVERY)
