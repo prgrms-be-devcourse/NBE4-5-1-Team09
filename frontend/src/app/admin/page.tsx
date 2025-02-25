@@ -225,16 +225,20 @@ export default function AdminPage() {
   };
 
   // 상품 삭제 처리
-  const handleDeleteItem = async (id: number) => {
+  const handleDeleteItem = async (id: number, hasImage: boolean) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
         setError("인증되지 않았습니다.");
         return;
       }
-      await api.delete(`/items/${id}`, {
+
+      const url = hasImage ? `/items/${id}/image` : `/items/${id}`;
+
+      await api.delete(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       setDeleteMessage("삭제가 완료되었습니다.");
       fetchItems();
       setTimeout(() => setDeleteMessage(""), 3000);
@@ -614,7 +618,7 @@ export default function AdminPage() {
                     수정
                   </button>
                   <button
-                    onClick={() => handleDeleteItem(item.id)}
+                    onClick={() => handleDeleteItem(item.id, !!item.imagePath)}
                     className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
                   >
                     삭제
