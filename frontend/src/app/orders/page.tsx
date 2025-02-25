@@ -273,6 +273,30 @@ export default function OrderPage() {
             주문 취소
           </button>
         )}
+        {isAdmin && status === "prepareDeliveryList" && (
+          <button
+            onClick={() => updateOrderStatus(group.tradeUUID, "prepare")}
+            className="bg-yellow-500 text-white px-3 py-1 rounded mt-2"
+          >
+            배송 준비
+          </button>
+        )}
+        {isAdmin && status === "beforeDeliveryList" && (
+          <button
+            onClick={() => updateOrderStatus(group.tradeUUID, "in-delivery")}
+            className="bg-green-500 text-white px-3 py-1 rounded mt-2"
+          >
+            배송 시작
+          </button>
+        )}
+        {isAdmin && status === "inDeliveryList" && (
+          <button
+            onClick={() => updateOrderStatus(group.tradeUUID, "post-delivery")}
+            className="bg-purple-500 text-white px-3 py-1 rounded mt-2"
+          >
+            배송 완료
+          </button>
+        )}
       </div>
     ));
   };
