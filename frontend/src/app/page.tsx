@@ -60,7 +60,7 @@ export default function HomePage() {
     }));
   };
 
-  // 장바구니에 상품 추가하는 함수 (axios 사용)
+  // 장바구니에 상품 추가하는 함수
   const handleAddToCart = async (product: Product) => {
     // 입력한 수량과 상품 재고 비교
     const quantity = quantities[product.id] || 1;
@@ -115,7 +115,10 @@ export default function HomePage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {products.map((product) => (
-                <div key={product.id} className="bg-white p-4 rounded shadow">
+                <div
+                  key={product.id}
+                  className="bg-white p-4 rounded shadow flex flex-col h-full"
+                >
                   <div className="w-full h-48 flex items-center justify-center overflow-hidden">
                     <img
                       src={`http://localhost:8080${product.imagePath}`}
@@ -158,7 +161,8 @@ export default function HomePage() {
                       className="border rounded p-1 w-12 text-sm"
                     />
                   </div>
-                  <div className="flex flex-col gap-2 mt-4">
+                  {/* 버튼 영역을 카드 하단에 고정 */}
+                  <div className="flex flex-col gap-2 mt-auto">
                     <Link
                       href={`/products/${product.id}`}
                       className="text-blue-600 hover:underline"
