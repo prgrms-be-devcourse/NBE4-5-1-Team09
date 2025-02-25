@@ -294,6 +294,16 @@ export default function OrderPage() {
               </h3>
               {renderOrderGroup(orders.inDeliveryList, "inDeliveryList")}
             </section>
+            <section className="mb-6">
+              <h3 className="text-xl font-semibold mb-2">
+                배송 완료 (POST_DELIVERY)
+              </h3>
+              {renderOrderGroup(orders.postDeliveryList, "postDeliveryList")}
+            </section>
+            <section className="mb-6">
+              <h3 className="text-xl font-semibold mb-2">주문 취소 (CANCEL)</h3>
+              {renderOrderGroup(orders.refusedList, "refusedList")}
+            </section>
           </div>
         ) : null}
       </main>

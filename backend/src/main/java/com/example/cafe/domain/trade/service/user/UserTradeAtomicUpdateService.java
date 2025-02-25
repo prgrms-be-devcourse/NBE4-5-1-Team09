@@ -427,7 +427,7 @@ public class UserTradeAtomicUpdateService {
 
             // • 취소된 상품들은 별도의 새 Trade(상태 REFUND)로 생성하여 저장
             Trade cancelledTrade = makeTrade(member, TradeStatus.REFUND);
-            cancelledTrade.setTradeUUID(trade.getTradeUUID());
+            cancelledTrade.setTradeUUID("refund" + trade.getTradeUUID());
             cancelledTrade.setTradeItems(cancelledTradeItems);
             int cancelledTotalPrice = cancelledTradeItems.stream()
                     .mapToInt(TradeItem::getPrice)
