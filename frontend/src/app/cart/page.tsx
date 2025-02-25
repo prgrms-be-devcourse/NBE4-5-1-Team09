@@ -98,9 +98,7 @@ export default function CartPage() {
       // OrderResponseDto에는 tradeUUID와 totalPrice가 포함됨
       const { tradeUUID, totalPrice } = response.data;
       // PaymentSelectionPage로 이동 (쿼리 파라미터로 전달)
-      router.push(
-        `/payment/select?tradeUUID=${tradeUUID}&totalPrice=${totalPrice}`
-      );
+      router.push(`/payment?tradeUUID=${tradeUUID}&totalPrice=${totalPrice}`);
     } catch (err: any) {
       const errorData = err.response?.data;
       alert(

@@ -18,6 +18,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
+      <head>
+        {/* 아임포트 결제 스크립트 추가 */}
+        <script src="https://service.iamport.kr/js/iamport.payment-1.2.0.js" />
+      </head>
       <body className={inter.className}>
         <AuthProvider>
           <Header />
