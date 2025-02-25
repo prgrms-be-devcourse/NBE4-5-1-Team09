@@ -107,11 +107,6 @@ export default function Header() {
               </Link>
             </li>
             <li>
-              <Link href="/reviews" className="hover:underline">
-                리뷰
-              </Link>
-            </li>
-            <li>
               {loggedIn ? (
                 <button onClick={handleLogout} className="hover:underline">
                   로그아웃

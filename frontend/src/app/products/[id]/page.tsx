@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Link from "next/link";
@@ -16,15 +16,21 @@ interface Product {
   itemStatus: string;
 }
 
+// Review 인터페이스에 memberEmail 필드를 추가합니다.
 interface Review {
   reviewId: number;
   memberId: number;
+  memberEmail: string;
   reviewContent: string;
   rating: number;
   createdAt: string;
 }
 
-export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function ProductDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const router = useRouter();
   const [id, setId] = useState<string | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
@@ -36,8 +42,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [reviewContent, setReviewContent] = useState("");
   const [rating, setRating] = useState(1);
   const [myReviews, setMyReviews] = useState<Review[]>([]);
-  const [editingReviewId, setEditingReviewId] = useState<number | null>(null); // 수정 중인 리뷰 ID
-  const [isAdmin, setIsAdmin] = useState(false); // 관리자 여부
+  const [editingReviewId, setEditingReviewId] = useState<number | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // URL 파라미터에서 ID 가져오기
   useEffect(() => {
@@ -61,13 +67,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   };
 
   const fetchReviews = async (id: string, sortType: string) => {
-    console.log(`Fetching reviews for item ${id} with sort type: ${sortType}`); // 로그 추가
     try {
       const memberEmail = localStorage.getItem("email");
       const response = await axios.get(
         `http://localhost:8080/reviews/item/${id}/${memberEmail}?sortType=${sortType}`
       );
-      console.log(response.data);
       setReviews(response.data);
       setLoading(false);
     } catch (err) {
@@ -79,7 +83,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const fetchMyReview = async (id: string) => {
     const memberEmail = localStorage.getItem("email");
     if (!memberEmail) return;
-
     try {
       const response = await axios.get(
         `http://localhost:8080/reviews/my/item/${id}/${memberEmail}`
@@ -92,18 +95,28 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  // 토큰에서 authority 정보를 디코딩하여 관리자 여부 설정
   useEffect(() => {
-    const checkAdmin = () => {
-      const userRole = localStorage.getItem("role");
-      if (userRole === "ADMIN") {
-        setIsAdmin(true);
-      } else {
-        setIsAdmin(false); // ADMIN이 아닌 경우 false로 설정
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const base64Url = token.split(".")[1];
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split("")
+            .map((c) => {
+              return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+            })
+            .join("")
+        );
+        const payload = JSON.parse(jsonPayload);
+        setIsAdmin(payload.authority === "ADMIN");
+      } catch (e) {
+        console.error("토큰 디코딩 중 오류 발생", e);
       }
-    };
-    checkAdmin();
+    }
   }, []);
-  console.log("isAdmin:", isAdmin);
 
   useEffect(() => {
     if (!id) return;
@@ -111,68 +124,43 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     fetchReviews(id, sortType);
     fetchMyReview(id);
   }, [id, sortType]);
-  
 
-  // 리뷰 작성 함수
   const handleReviewSubmit = async () => {
     if (!id) return;
-
     try {
       const token = localStorage.getItem("token");
       const memberEmail = localStorage.getItem("email");
-
       if (!token || !memberEmail) {
         alert("로그인이 필요합니다.");
         router.push("/login");
         return;
       }
-
       if (editingReviewId) {
-        // 수정 모드일 때는 PUT 요청을 보냄
         await axios.put(
           `http://localhost:8080/reviews/update/${editingReviewId}`,
-          {
-            reviewContent,
-            rating,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+          { reviewContent, rating },
+          { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
-        // 새 리뷰 작성은 POST 요청
         await axios.post(
           "http://localhost:8080/reviews/create",
-          {
-            memberEmail,
-            itemId: id,
-            reviewContent,
-            rating,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+          { memberEmail, itemId: id, reviewContent, rating },
+          { headers: { Authorization: `Bearer ${token}` } }
         );
       }
-
       setShowModal(false);
       setReviewContent("");
       setRating(1);
-      setEditingReviewId(null); // 수정 모드 종료
-      fetchReviews(id, sortType); // 리뷰 목록 갱신
-      fetchMyReview(id); // 내 리뷰 목록 갱신
-      fetchProductData(id); // 상품 정보 갱신 (평균 평점 갱신)
+      setEditingReviewId(null);
+      fetchReviews(id, sortType);
+      fetchMyReview(id);
+      fetchProductData(id);
     } catch (err) {
       console.error(err);
       setError("리뷰 작성에 실패했습니다.");
     }
   };
 
-  // 리뷰 삭제 함수
   const handleReviewDelete = async (reviewId: number) => {
     try {
       const token = localStorage.getItem("token");
@@ -181,18 +169,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         router.push("/login");
         return;
       }
-
-      await axios.delete(
-        `http://localhost:8080/reviews/delete/${reviewId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      fetchReviews(id!, sortType); // 리뷰 목록 갱신
-      fetchMyReview(id!); // 내 리뷰 목록 갱신
-      fetchProductData(id!); // 상품 정보 갱신 (평균 평점 갱신)
+      await axios.delete(`http://localhost:8080/reviews/delete/${reviewId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchReviews(id!, sortType);
+      fetchMyReview(id!);
+      fetchProductData(id!);
     } catch (err) {
       console.error("리뷰 삭제에 실패했습니다.");
     }
@@ -202,14 +184,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     setEditingReviewId(review.reviewId);
     setReviewContent(review.reviewContent);
     setRating(review.rating);
-    setShowModal(true); // 수정 모달 띄우기
+    setShowModal(true);
   };
 
   const handleSortChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newSortType = event.target.value;
-    console.log(`Sort type changed to: ${newSortType}`); // 로그 추가
     setSortType(newSortType);
-    fetchReviews(id!, newSortType); // 이 부분이 호출되는지 확인
+    fetchReviews(id!, newSortType);
   };
 
   if (loading) {
@@ -241,19 +222,46 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 카테고리: {product?.category}
               </p>
               <p className="text-yellow-500 mb-4">
-                평점: {product?.avgRating !== null ? product?.avgRating.toFixed(1) : "-"}
+                평점:{" "}
+                {product?.avgRating !== null
+                  ? product?.avgRating.toFixed(1)
+                  : "-"}
               </p>
               <p
-                className={`text-lg font-semibold ${product?.itemStatus === "ON_SALE" ? "text-green-500" : "text-red-500"}`}
+                className={`text-lg font-semibold ${
+                  product?.itemStatus === "ON_SALE"
+                    ? "text-green-500"
+                    : "text-red-500"
+                }`}
               >
                 {product?.itemStatus === "ON_SALE" ? "구매 가능" : "품절"}
               </p>
-              <Link
-                href="/products"
-                className="text-blue-600 hover:underline mt-4 inline-block"
-              >
-                돌아가기
-              </Link>
+              {/* 상품 상세 정보 아래에 주문하기 버튼 추가 */}
+              {product?.itemStatus === "ON_SALE" && (
+                <div className="mt-4 flex gap-4">
+                  <Link
+                    href="/order/create"
+                    className="bg-green-500 text-white px-4 py-2 rounded"
+                  >
+                    주문하기
+                  </Link>
+                  <Link
+                    href="/products"
+                    className="text-blue-600 hover:underline inline-block"
+                  >
+                    돌아가기
+                  </Link>
+                </div>
+              )}
+              {!product?.itemStatus ||
+                (product?.itemStatus !== "ON_SALE" && (
+                  <Link
+                    href="/products"
+                    className="text-blue-600 hover:underline mt-4 inline-block"
+                  >
+                    돌아가기
+                  </Link>
+                ))}
             </div>
           </div>
         </div>
@@ -272,7 +280,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <div key={review.reviewId} className="mb-4">
                   <p className="font-semibold">평점: {review.rating}</p>
                   <p>{review.reviewContent}</p>
-                  <p className="text-sm text-gray-500">작성일: {review.createdAt.slice(0, 10)}</p>
+                  <p className="text-sm text-gray-500">
+                    작성일: {review.createdAt.slice(0, 10)}
+                  </p>
                   <div className="flex gap-2 mt-2">
                     <button
                       onClick={() => handleEditButtonClick(review)}
@@ -296,7 +306,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           {showModal && (
             <div className="fixed top-0 left-0 w-full h-full bg-gray-800 bg-opacity-50 flex justify-center items-center">
               <div className="bg-white p-6 rounded shadow-md w-96">
-                <h3 className="text-2xl font-bold mb-4">{editingReviewId ? "리뷰 수정" : "리뷰 작성"}</h3>
+                <h3 className="text-2xl font-bold mb-4">
+                  {editingReviewId ? "리뷰 수정" : "리뷰 작성"}
+                </h3>
                 <textarea
                   className="w-full p-2 border border-gray-300 rounded mb-4"
                   placeholder="리뷰 내용을 작성하세요."
@@ -304,9 +316,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   onChange={(e) => setReviewContent(e.target.value)}
                 />
                 <div className="flex items-center mb-4">
-                  {/* 평점 슬라이더 */}
                   <div className="flex items-center gap-2 mb-4">
-                  <span>평점 :&nbsp;{rating}</span>
+                    <span>평점 :&nbsp;{rating}</span>
                     <input
                       type="range"
                       min="1"
@@ -334,57 +345,57 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
-          {/* 리뷰 작성 버튼 추가 */}
-<div className="text-right mb-4">
-  <button
-    onClick={() => setShowModal(true)}
-    className="bg-green-500 text-white px-4 py-2 rounded"
-  >
-    리뷰 작성
-  </button>
-</div>
+          {/* 리뷰 작성 버튼 */}
+          <div className="text-right mb-4">
+            <button
+              onClick={() => setShowModal(true)}
+              className="bg-green-500 text-white px-4 py-2 rounded"
+            >
+              리뷰 작성
+            </button>
+          </div>
 
-{/* 리뷰 정렬 및 표시 */}
-<div className="text-right mb-4">
-  <label className="mr-2">정렬 기준: </label>
-  <select
-  value={sortType}
-  onChange={(e) => handleSortChange(e)}  // 수정된 부분
-  className="p-2 border border-gray-300 rounded"
->
-  <option value="LATEST">최신순</option>
-  <option value="HIGHEST_RATING">평점 높은 순</option>
-  <option value="LOWEST_RATING">평점 낮은 순</option>
-</select>
-</div>
+          {/* 리뷰 정렬 및 표시 */}
+          <div className="text-right mb-4">
+            <label className="mr-2">정렬 기준: </label>
+            <select
+              value={sortType}
+              onChange={handleSortChange}
+              className="p-2 border border-gray-300 rounded"
+            >
+              <option value="LATEST">최신순</option>
+              <option value="HIGHEST_RATING">평점 높은 순</option>
+              <option value="LOWEST_RATING">평점 낮은 순</option>
+            </select>
+          </div>
 
-{reviews.length === 0 ? (
-  <p className="text-center">리뷰가 없습니다.</p>
-) : (
-  <div>
-    {reviews.map((review) => (
-  <div key={review.reviewId} className="mb-6 border-b pb-4">
-    <p className="font-semibold">평점: {review.rating}</p>
-    <p>{review.reviewContent}</p>
-    <p className="text-sm text-gray-500">작성일: {review.createdAt.slice(0, 10)}</p>
-    <div className="flex justify-between mt-2">
-      <span>{isAdmin && "관리자"}</span>
-      {/* 관리자인 경우에만 삭제 버튼을 표시 */}
-      {isAdmin && (
-        <button
-          onClick={() => handleReviewDelete(review.reviewId)}
-          className="text-red-500"
-        >
-          삭제
-        </button>
-      )}
-    </div>
-  </div>
-))}
-
-  </div>
-)}
-
+          {reviews.length === 0 ? (
+            <p className="text-center">리뷰가 없습니다.</p>
+          ) : (
+            <div>
+              {reviews.map((review) => (
+                <div key={review.reviewId} className="mb-6 border-b pb-4">
+                  <p className="font-semibold">평점: {review.rating}</p>
+                  <p>{review.reviewContent}</p>
+                  <p className="text-sm text-gray-500">
+                    작성일: {review.createdAt.slice(0, 10)}
+                  </p>
+                  <div className="flex justify-between mt-2">
+                    {isAdmin && <span>관리자</span>}
+                    {(isAdmin ||
+                      localStorage.getItem("email") === review.memberEmail) && (
+                      <button
+                        onClick={() => handleReviewDelete(review.reviewId)}
+                        className="text-red-500"
+                      >
+                        삭제
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </div>
