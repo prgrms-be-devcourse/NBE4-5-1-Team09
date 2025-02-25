@@ -128,7 +128,14 @@ export default function CartPage() {
           cart && (
             <div>
               <h2 className="text-2xl font-bold mb-4">
-                총 금액: {cart.totalPrice} 원
+                총 금액:{" "}
+                {new Intl.NumberFormat("ko-KR", {
+                  style: "currency",
+                  currency: "KRW",
+                })
+                  .format(cart.totalPrice)
+                  .replace("₩", "")}{" "}
+                원
               </h2>
               <div className="grid grid-cols-1 gap-4">
                 {cart.items.map((item) => (
@@ -138,7 +145,16 @@ export default function CartPage() {
                   >
                     <div>
                       <h3 className="text-xl font-bold">{item.itemName}</h3>
-                      <p>가격: {item.price} 원</p>
+                      <p>
+                        가격:{" "}
+                        {new Intl.NumberFormat("ko-KR", {
+                          style: "currency",
+                          currency: "KRW",
+                        })
+                          .format(item.price)
+                          .replace("₩", "")}{" "}
+                        원
+                      </p>
                     </div>
                     <div className="flex items-center gap-2 mt-4 md:mt-0">
                       <label

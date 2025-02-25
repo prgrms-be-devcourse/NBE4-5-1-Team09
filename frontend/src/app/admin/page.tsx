@@ -369,17 +369,27 @@ export default function AdminPage() {
           <div className="mb-2">
             <label className="block text-gray-700">상품 가격</label>
             <input
-              type="number"
+              type="text"
               value={newItem.price}
-              onChange={(e) =>
-                setNewItem({ ...newItem, price: e.target.value })
-              }
-              onBlur={(e) =>
-                setNewItem({
-                  ...newItem,
-                  price: String(Number(e.target.value)),
-                })
-              }
+              onInput={(e) => {
+                // Type assertion을 사용하여 e.target을 HTMLInputElement로 지정
+                const value = (e.target as HTMLInputElement).value.replace(
+                  /[^0-9]/g,
+                  ""
+                );
+                const formattedValue = new Intl.NumberFormat("ko-KR").format(
+                  Number(value)
+                );
+                setNewItem({ ...newItem, price: formattedValue });
+              }}
+              onBlur={(e) => {
+                // Type assertion을 사용하여 e.target을 HTMLInputElement로 지정
+                const value = (e.target as HTMLInputElement).value.replace(
+                  /[^0-9]/g,
+                  ""
+                );
+                setNewItem({ ...newItem, price: value });
+              }}
               className="border p-2 rounded w-full"
               required
             />
@@ -510,14 +520,18 @@ export default function AdminPage() {
                 <div className="mb-2">
                   <label className="block text-gray-700">상품 가격</label>
                   <input
-                    type="number"
-                    value={editingItem.price}
-                    onChange={(e) =>
+                    type="text"
+                    value={new Intl.NumberFormat("ko-KR").format(
+                      editingItem.price
+                    )}
+                    onChange={(e) => {
+                      // 입력값에서 숫자만 추출
+                      const value = e.target.value.replace(/[^0-9]/g, "");
                       setEditingItem({
                         ...editingItem,
-                        price: Number(e.target.value),
-                      })
-                    }
+                        price: value ? Number(value) : 0,
+                      });
+                    }}
                     className="border p-2 rounded w-full"
                     required
                   />
@@ -579,7 +593,9 @@ export default function AdminPage() {
                 <div>
                   <h3 className="font-bold">{item.itemName}</h3>
                   <p>{item.content}</p>
-                  <p className="font-bold">가격: {item.price}</p>
+                  <p className="font-bold">
+                    가격: {new Intl.NumberFormat("ko-KR").format(item.price)} 원
+                  </p>
                   <p className="font-bold">재고: {item.stock}</p>
                   <p className="text-sm text-gray-600">
                     카테고리: {item.category}

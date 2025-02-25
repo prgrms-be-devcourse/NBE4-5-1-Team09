@@ -129,7 +129,11 @@ export default function HomePage() {
                   <h4 className="text-xl font-bold mb-2">{product.itemName}</h4>
                   <p className="text-gray-600 mb-2">{product.content}</p>
                   <p className="text-lg font-bold mb-2">
-                    가격: {product.price} 원
+                    가격:{" "}
+                    {new Intl.NumberFormat("ko-KR", {
+                      style: "currency",
+                      currency: "KRW",
+                    }).format(product.price)}
                   </p>
                   <p className="text-yellow-500 mb-2">
                     평점:{" "}
