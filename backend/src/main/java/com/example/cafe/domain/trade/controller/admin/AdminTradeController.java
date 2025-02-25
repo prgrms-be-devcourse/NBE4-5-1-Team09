@@ -2,11 +2,13 @@ package com.example.cafe.domain.trade.controller.admin;
 
 import com.example.cafe.domain.trade.domain.dto.request.AdminConfirmRequestDto;
 import com.example.cafe.domain.trade.domain.dto.response.OrderResponseDto;
+import com.example.cafe.domain.trade.domain.dto.response.OrdersResponseDto;
 import com.example.cafe.domain.trade.service.admin.AdminTradeService;
 import com.example.cafe.global.annotation.CheckPermission;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,5 +43,11 @@ public class AdminTradeController {
     @PostMapping("/post-delivery")
     public ResponseEntity<OrderResponseDto> postDelivery(AdminConfirmRequestDto requestDto) {
         return ResponseEntity.ok(service.adminSetPostDelivery(requestDto));
+    }
+
+    @CheckPermission("ADMIN")
+    @GetMapping("/all-trades")
+    public ResponseEntity<OrdersResponseDto> showAllTrade() {
+        return ResponseEntity.ok(service.showAllTradeItems());
     }
 }
