@@ -126,6 +126,78 @@ export default function OrderPage() {
     }
   };
 
+  // 사용자 주문 취소 함수 (BUY)
+  const handleCancelBuyOrder = async (
+    tradeUUID: string,
+    orderItems: OrderItem[]
+  ) => {
+    // 각 주문 항목별로 취소할 수량을 입력받음
+    const cancelItemList = orderItems
+      .map((item) => {
+        const input = window.prompt(
+          `상품: ${item.itemName}\n주문 수량: ${item.quantity}\n취소할 수량을 입력하세요 (0 입력 시 취소 안함):`,
+          "0"
+        );
+        const qty = parseInt(input || "0", 10);
+        return { itemId: item.itemId, quantity: qty };
+      })
+      .filter((ci) => ci.quantity > 0);
+    if (cancelItemList.length === 0) return;
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("로그인이 필요합니다.");
+        return;
+      }
+      await api.post(
+        "/order/cancel",
+        { tradeUUID, cancelItemList },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("취소 요청이 완료되었습니다.");
+      fetchOrders();
+    } catch (err: any) {
+      alert("취소 요청에 실패했습니다.");
+      console.error(err);
+    }
+  };
+
+  // 사용자 주문 취소 함수 (PAY)
+  const handleCancelPayOrder = async (
+    tradeUUID: string,
+    orderItems: OrderItem[]
+  ) => {
+    const cancelItemList = orderItems
+      .map((item) => {
+        const input = window.prompt(
+          `상품: ${item.itemName}\n주문 수량: ${item.quantity}\n취소할 수량을 입력하세요 (0 입력 시 취소 안함):`,
+          "0"
+        );
+        const qty = parseInt(input || "0", 10);
+        return { itemId: item.itemId, quantity: qty };
+      })
+      .filter((ci) => ci.quantity > 0);
+    if (cancelItemList.length === 0) return;
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("로그인이 필요합니다.");
+        return;
+      }
+
+      await api.post(
+        "/order/cancel",
+        { tradeUUID, cancelItemList },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("취소 요청이 완료되었습니다.");
+      fetchOrders();
+    } catch (err: any) {
+      alert("취소 요청에 실패했습니다.");
+      console.error(err);
+    }
+  };
+
   const handlePayment = async (item: OrderItem, tradeUUID: string) => {
     try {
       const token = localStorage.getItem("token");
@@ -142,8 +214,8 @@ export default function OrderPage() {
 
       // 결제 요청을 위해 해당 아이템과 수량을 전달
       const response = await api.post(
-        "/order/item",
-        { memberEmail, itemId: item.itemId, quantity: buyQuantity },
+        "/order/pay-retry",
+        { tradeUUID },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -176,8 +248,7 @@ export default function OrderPage() {
             확인
           </button>
         )}
-        {/* 사용자 취소 버튼: BUY와 PAY 상태 모두 동일한 취소 로직 사용 */}
-        {!isAdmin && (status === "buyList" || status === "payList") && (
+        {!isAdmin && status === "buyList" && (
           <div className="mt-2 flex gap-2">
             <button
               onClick={() =>
@@ -187,20 +258,26 @@ export default function OrderPage() {
             >
               주문 취소
             </button>
-            {status === "buyList" && (
-              <>
-                {group.orderItemDtoList.map((item) => (
-                  <button
-                    key={item.itemId}
-                    onClick={() => handlePayment(item, group.tradeUUID)}
-                    className="bg-green-500 text-white px-3 py-1 rounded"
-                  >
-                    결제하기
-                  </button>
-                ))}
-              </>
-            )}
+            {group.orderItemDtoList.map((item) => (
+              <button
+                key={item.itemId}
+                onClick={() => handlePayment(item, group.tradeUUID)} // item과 tradeUUID 전달
+                className="bg-green-500 text-white px-3 py-1 rounded"
+              >
+                결제하기
+              </button>
+            ))}
           </div>
+        )}
+        {!isAdmin && status === "payList" && (
+          <button
+            onClick={() =>
+              handleCancelPayOrder(group.tradeUUID, group.orderItemDtoList)
+            }
+            className="bg-red-500 text-white px-3 py-1 rounded mt-2"
+          >
+            주문 취소
+          </button>
         )}
       </div>
     ));
@@ -231,6 +308,41 @@ export default function OrderPage() {
             <section className="mb-6">
               <h3 className="text-xl font-semibold mb-2">결제 완료 (PAY)</h3>
               {renderOrderGroup(orders.payList, "payList")}
+            </section>
+            {/* 그 외 상태들 (배송 준비중, 배송 전, 배송중 등) */}
+            <section className="mb-6">
+              <h3 className="text-xl font-semibold mb-2">
+                배송 준비중 (PREPARE_DELIVERY)
+              </h3>
+              {renderOrderGroup(
+                orders.prepareDeliveryList,
+                "prepareDeliveryList"
+              )}
+            </section>
+            <section className="mb-6">
+              <h3 className="text-xl font-semibold mb-2">
+                배송 전 (BEFORE_DELIVERY)
+              </h3>
+              {renderOrderGroup(
+                orders.beforeDeliveryList,
+                "beforeDeliveryList"
+              )}
+            </section>
+            <section className="mb-6">
+              <h3 className="text-xl font-semibold mb-2">
+                배송중 (IN_DELIVERY)
+              </h3>
+              {renderOrderGroup(orders.inDeliveryList, "inDeliveryList")}
+            </section>
+            <section className="mb-6">
+              <h3 className="text-xl font-semibold mb-2">
+                배송 완료 (POST_DELIVERY)
+              </h3>
+              {renderOrderGroup(orders.postDeliveryList, "postDeliveryList")}
+            </section>
+            <section className="mb-6">
+              <h3 className="text-xl font-semibold mb-2">주문 취소 (CANCEL)</h3>
+              {renderOrderGroup(orders.refusedList, "refusedList")}
             </section>
           </div>
         ) : null}
