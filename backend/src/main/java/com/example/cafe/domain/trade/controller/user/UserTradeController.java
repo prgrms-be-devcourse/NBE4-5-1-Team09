@@ -3,9 +3,11 @@ package com.example.cafe.domain.trade.controller.user;
 import com.example.cafe.domain.member.service.AuthTokenService;
 import com.example.cafe.domain.trade.domain.dto.request.CancelRequestDto;
 import com.example.cafe.domain.trade.domain.dto.request.OrderRequestItemDto;
+import com.example.cafe.domain.trade.domain.dto.request.RePayRequestDto;
 import com.example.cafe.domain.trade.domain.dto.response.CancelResponseDto;
 import com.example.cafe.domain.trade.domain.dto.response.OrderResponseDto;
 import com.example.cafe.domain.trade.domain.dto.response.OrdersResponseDto;
+import com.example.cafe.domain.trade.domain.dto.response.RePayResponseDto;
 import com.example.cafe.domain.trade.service.user.UserTradeAtomicUpdateService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -56,6 +58,15 @@ public class UserTradeController {
             @RequestBody CancelRequestDto cancelRequestDto
     ) {
         return ResponseEntity.ok(service.cancelTrade(authTokenService.getIdFromToken(authHeader), cancelRequestDto));
+    }
+
+    @Operation(summary = "카트에 넣지 않고 바로 상품 주문", description = "회원이 상품을 바로 주문할 수 있습니다.")
+    @PostMapping("/pay-retry")
+    public ResponseEntity<RePayResponseDto> payRetry(
+            @Parameter(hidden = true)
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody RePayRequestDto requestItemDto) {
+        return ResponseEntity.ok(service.payRetry(authTokenService.getIdFromToken(authHeader), requestItemDto));
     }
 
 }
