@@ -13,6 +13,9 @@ public interface TradeRepository extends JpaRepository<Trade, Long> {
     Optional<Trade> findByTradeUUID(String tradeUUID);
 
     List<Trade> findByTradeStatus(TradeStatus tradeStatus);
-    @Query("SELECT COUNT(t) > 0 FROM Trade t JOIN t.tradeItems ti WHERE t.member.id = :memberId AND ti.item.id = :itemId")
+
+    @Query("SELECT CASE WHEN COUNT(ti) > 0 THEN true ELSE false END FROM Trade t " +
+            "JOIN t.tradeItems ti " +
+            "WHERE t.member.id = :memberId AND ti.item.id = :itemId")
     boolean existsByMemberIdAndItemId(@Param("memberId") Long memberId, @Param("itemId") Long itemId);
 }

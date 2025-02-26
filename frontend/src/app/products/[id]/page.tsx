@@ -128,34 +128,53 @@ export default function ProductDetailPage({
     try {
       const token = localStorage.getItem("token");
       const memberEmail = localStorage.getItem("email");
+
       if (!token || !memberEmail) {
         alert("로그인이 필요합니다.");
         router.push("/login");
         return;
       }
+
+      const reviewData = { memberEmail, itemId: id, reviewContent, rating };
+
       if (editingReviewId) {
-        await api.put(
-          `/reviews/update/${editingReviewId}`,
-          { reviewContent, rating },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await api.put(`/reviews/update/${editingReviewId}`, reviewData, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       } else {
-        await api.post(
-          "/reviews/create",
-          { memberEmail, itemId: id, reviewContent, rating },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await api.post("/reviews/create", reviewData, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       }
+
+      // 성공 시 상태 초기화
       setShowModal(false);
       setReviewContent("");
       setRating(1);
       setEditingReviewId(null);
+
+      // 리뷰 갱신
       fetchReviews(id, sortType);
       fetchMyReview(id);
       fetchProductData(id);
-    } catch (err) {
-      console.error(err);
-      setError("리뷰 작성에 실패했습니다.");
+    } catch (err: any) {
+      if (err.response) {
+        // 서버에서 보낸 에러 메시지를 가져옴
+        const errorMessage =
+          err.response.data?.msg ||
+          err.response.data?.message ||
+          err.response.data?.resultCode ||
+          "리뷰 작성 중 오류가 발생했습니다.";
+
+        alert(`에러: ${errorMessage}`);
+        setError(errorMessage);
+      } else if (err.request) {
+        alert("서버 응답이 없습니다. 네트워크 상태를 확인해주세요.");
+        setError("서버 응답이 없습니다.");
+      } else {
+        alert(`요청 중 오류 발생: ${err.message}`);
+        setError(`요청 중 오류 발생: ${err.message}`);
+      }
     }
   };
 

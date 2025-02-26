@@ -35,6 +35,7 @@ public class ReviewService {
 
         boolean hasPurchased = tradeRepository.existsByMemberIdAndItemId(member.getId(), itemId);
 
+        // 구매 기록이 없으면 예외 발생
         if (!hasPurchased) {
             throw new IllegalArgumentException("해당 상품을 구매한 사용자만 리뷰를 작성할 수 있습니다.");
         }
