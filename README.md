@@ -24,7 +24,7 @@
 [🔗 시스템 명세서 Wiki 바로가기](https://github.com/prgrms-be-devcourse/NBE4-5-1-Team09/wiki/%EC%8B%9C%EC%8A%A4%ED%85%9C-%EB%AA%85%EC%84%B8%EC%84%9C)
 
 # DB ERD (ver.0.1)
-https://www.erdcloud.com/team/kKm3uNXtgGF56Jrxx
+[https://www.erdcloud.com/team/kKm3uNXtgGF56Jrxx](https://www.erdcloud.com/d/qYquDQt26SnfLaJR4)
 ![image](https://github.com/user-attachments/assets/11f772e0-22ac-4b8b-a661-33c7c4ca98a3)
 
 # 시스템 아키텍처
